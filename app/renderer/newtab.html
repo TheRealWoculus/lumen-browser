@@ -133,7 +133,7 @@
     <h1>Good <span id="greet">day</span></h1>
     <p class="sub">Search the web or enter a URL</p>
     <form class="search-box" id="search-form">
-      <input type="text" id="q" placeholder="Search or type a URL…" autofocus autocomplete="off">
+      <input type="text" id="q" placeholder="Search with Lumen Lens…" autofocus autocomplete="off">
       <button type="submit">Search</button>
     </form>
     <div class="bookmarks-section">
@@ -159,16 +159,16 @@
     const h = new Date().getHours();
     document.getElementById('greet').textContent =
       h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-    function tick() {
+
+    function updateClock() {
       document.getElementById('clock').textContent =
-        new Date().toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+        new Date().toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
-    tick();
-    setInterval(tick, 30000);
+    updateClock();
+    setInterval(updateClock, 500);
 
     function navigate(url) {
-      if (window.lumenGuest) window.lumenGuest.navigate(url);
-      else if (window.parent !== window) window.parent.postMessage({ type: 'lumen-navigate', query: url }, '*');
+      window.parent.postMessage({ type: 'lumen-navigate', query: url }, '*');
     }
 
     document.getElementById('search-form').addEventListener('submit', (e) => {
@@ -184,15 +184,18 @@
 
     async function loadBookmarks() {
       const grid = document.getElementById('bookmarks-grid');
+      const section = document.querySelector('.bookmarks-section');
       try {
         let bookmarks = [];
         if (window.lumenGuest && window.lumenGuest.getBookmarks) {
           bookmarks = await window.lumenGuest.getBookmarks();
         }
         if (bookmarks.length === 0) {
-          grid.innerHTML = '<div class="empty-bookmarks">No bookmarks yet. Press Ctrl+D to bookmark this page, or open Settings → Bookmarks to add one.</div>';
+          grid.innerHTML = '<div class="empty-bookmarks">No bookmarks yet. Press Ctrl+D to bookmark this page.</div>';
+          section.style.display = 'none';
           return;
         }
+        section.style.display = '';
         grid.innerHTML = bookmarks.map((bm) => {
           let host = '';
           try { host = new URL(bm.url).hostname; } catch {}
@@ -208,7 +211,9 @@
             navigate(el.getAttribute('href'));
           });
         });
-      } catch { grid.innerHTML = '<div class="empty-bookmarks">Could not load bookmarks.</div>'; }
+      } catch {
+        grid.innerHTML = '<div class="empty-bookmarks">Could not load bookmarks.</div>';
+      }
     }
 
     function escapeHtml(s) {
@@ -216,6 +221,9 @@
     }
 
     loadBookmarks();
+
+    // Reload bookmarks every 10 seconds
+    setInterval(loadBookmarks, 10000);
   </script>
 </body>
 </html>

@@ -270,7 +270,6 @@
     if (panel) {
       const navBtn = [...$$('.snav')].find((b) => b.dataset.panel === panel);
       if (navBtn) { navBtn.classList.add('on'); document.getElementById(`panel-${panel}`)?.classList.add('on'); }
-      if (panel === 'history') refreshHistoryList();
       if (panel === 'downloads') refreshDownloadsList();
       if (panel === 'vpn') setupProxyUI();
     }
@@ -699,6 +698,18 @@
     });
     wv.addEventListener('did-navigate-in-page', (e) => { tab.url = e.url; if (tab.id === activeTabId) $('#omnibox').value = e.url.includes('newtab.html') ? 'lumen://newtab' : e.url; });
     wv.addEventListener('new-window', (e) => { e.preventDefault(); createTab(e.url); });
+    // Forward keyboard shortcuts from webview to document
+    wv.addEventListener('keydown', (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const handled = ['t', 'T', 'w', 'W', 'l', 'L', 'f', 'F', 'r', 'R', 'd', 'D', 'h', 'H', ',', 'Tab', '=', '+', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      if (handled.includes(e.key)) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, bubbles: true }));
+      }
+      if (e.shiftKey && ['T', 'B', 'I', 'J', 'S'].includes(e.key)) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, ctrlKey: true, metaKey: false, shiftKey: true, bubbles: true }));
+      }
+    });
     bindFind(wv);
   }
 
@@ -1080,29 +1091,6 @@
     overlay.querySelector('#wiz-back').addEventListener('click', () => { step--; renderStep(step); });
   }
 
-  async function refreshHistoryList() {
-    const container = $('#history-list');
-    if (!container) return;
-    try {
-      const history = await window.lumen.getBrowserHistory();
-      if (history.length === 0) { container.innerHTML = '<p class="muted">No browsing history yet.</p>'; return; }
-      container.innerHTML = history.map((h) => {
-        const timeStr = h.time ? new Date(h.time).toLocaleString() : '';
-        return `<div class="pw-item" style="cursor:pointer"><div class="info"><div class="site">${escapeHtml(h.title || h.url)}</div><div class="creds">${escapeHtml(h.url)} · ${timeStr}</div></div></div>`;
-      }).join('');
-      container.querySelectorAll('.pw-item').forEach((el, i) => {
-        el.addEventListener('click', () => {
-          const entry = history[i];
-          if (entry && entry.url) {
-            const tab = getActiveTab();
-            if (tab) navigateTab(tab, entry.url);
-            $('#settings-dialog').close();
-          }
-        });
-      });
-    } catch {}
-  }
-
   async function refreshDownloadsList() {
     const container = $('#downloads-list');
     if (!container) return;
@@ -1270,7 +1258,6 @@
         btn.classList.add('on');
         const panel = $(`#panel-${btn.dataset.panel}`);
         if (panel) panel.classList.add('on');
-        if (btn.dataset.panel === 'history') refreshHistoryList();
         if (btn.dataset.panel === 'downloads') refreshDownloadsList();
         if (btn.dataset.panel === 'vpn') setupProxyUI();
       });
@@ -1318,7 +1305,6 @@
     $('#set-proxy-region').addEventListener('change', updateProxyFields);
     $('#btn-apply-proxy').addEventListener('click', applyProxySettings);
     $('#btn-clear-browsing-data').addEventListener('click', handleClearBrowsingData);
-    $('#btn-clear-browser-history').addEventListener('click', async () => { await window.lumen.clearBrowserHistory(); toast('Browsing history cleared'); refreshHistoryList(); });
     $('#btn-clear-downloads').addEventListener('click', async () => { await window.lumen.clearDownloads(); activeDownloads = []; refreshDownloadsList(); toast('Downloads list cleared'); });
 
     $('#find-prev').addEventListener('click', () => doFindNext(false));
@@ -1543,10 +1529,6 @@
     window.lumen.onNavigationBlocked?.((url) => { toast(`Blocked: ${url} (18+ Mode)`); });
     setupWelcome();
 
-    window.lumen.onAppShortcut?.(({ key, ctrl, meta, shift }) => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: ctrl, metaKey: meta, shiftKey: shift, bubbles: true }));
-    });
-
     // Subtle entrance animation with motion.dev
     if (typeof Motion !== 'undefined') {
       Motion.animate($('#tabstrip'), { y: [-6, 0], opacity: [0, 1] }, { duration: 0.2, easing: 'ease-out' });
@@ -1554,7 +1536,7 @@
     }
 
     if (!settings.firstRun) { const restored = await loadSavedTabs(); if (!restored) createTab('lumen://newtab'); }
-    setInterval(refreshLumenStats, 15000); setInterval(refreshPasswordList, 30000); setInterval(refreshBookmarkList, 10000); setInterval(refreshHistoryList, 15000);
+    setInterval(refreshLumenStats, 15000); setInterval(refreshPasswordList, 30000); setInterval(refreshBookmarkList, 10000);
   }
 
   init();
