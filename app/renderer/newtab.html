@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Tab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #f2f2ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      background-color: #07070e;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, #7c3aed22, transparent 60%),
+        linear-gradient(180deg, transparent 40%, #07070ecc 100%);
+      pointer-events: none;
+    }
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 560px; text-align: center; }
+    .logo {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 18px;
+      box-shadow: 0 12px 48px #7c3aed44;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--accent, #7c3aed), var(--accent2, #06b6d4));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub { color: #8888a8; font-size: 14px; margin-bottom: 32px; }
+  .search-box {
+      display: flex;
+      background: #10101cdd;
+      border: 1.5px solid #1e1e30;
+      border-radius: 14px;
+      padding: 4px;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box:focus-within {
+      border-color: var(--accent, #7c3aed);
+      box-shadow: 0 0 0 4px #7c3aed33;
+    }
+    .search-box input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: #f2f2ff;
+      outline: none;
+      font-family: inherit;
+    }
+    .search-box button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent, #7c3aed), var(--accent2, #06b6d4));
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .shortcuts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 40px;
+      width: 100%;
+      max-width: 480px;
+    }
+    .shortcut {
+      padding: 16px 8px;
+      background: #10101c99;
+      border: 1px solid #1e1e30;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+      text-decoration: none;
+      color: #cacade;
+      font-size: 12px;
+    }
+    .shortcut:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent, #7c3aed);
+    }
+    .shortcut .ic { font-size: 22px; display: block; margin-bottom: 6px; }
+    .clock {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      font-size: 13px;
+      color: #8888a8;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock" id="clock"></div>
+  <div class="wrap">
+    <img class="logo" id="logo" src="../assets/lumen_128.png" alt="Lumen" onerror="this.style.display='none'">
+    <h1>Good <span id="greet">day</span></h1>
+    <p class="sub">Search the web or enter a URL</p>
+    <form class="search-box" id="search-form">
+      <input type="text" id="q" placeholder="Search or type a URL…" autofocus autocomplete="off">
+      <button type="submit">Search</button>
+    </form>
+    <div class="shortcuts">
+      <a class="shortcut" data-url="https://github.com"><span class="ic">⌘</span>GitHub</a>
+      <a class="shortcut" data-url="https://developer.mozilla.org"><span class="ic">📘</span>MDN</a>
+      <a class="shortcut" data-url="https://wikipedia.org"><span class="ic">📖</span>Wikipedia</a>
+      <a class="shortcut" data-url="lumen://docs"><span class="ic">✦</span>Docs</a>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const accent = params.get('accent') || '#7C3AED';
+    const accent2 = params.get('accent2') || '#06B6D4';
+    const wp = params.get('wallpaper');
+    const wpMode = params.get('wpMode') || 'cover';
+    document.documentElement.style.setProperty('--accent', accent);
+    document.documentElement.style.setProperty('--accent2', accent2);
+    if (wp) {
+      document.body.style.backgroundImage = `url("${decodeURIComponent(wp)}")`;
+      document.body.style.backgroundSize = wpMode;
+    }
+    const h = new Date().getHours();
+    document.getElementById('greet').textContent =
+      h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+    function tick() {
+      document.getElementById('clock').textContent =
+        new Date().toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+    tick();
+    setInterval(tick, 30000);
+    document.getElementById('search-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = document.getElementById('q').value.trim();
+      if (!q) return;
+      if (window.lumenGuest) window.lumenGuest.navigate(q);
+      else if (window.parent !== window) {
+        window.parent.postMessage({ type: 'lumen-navigate', query: q }, '*');
+      }
+    });
+    document.querySelectorAll('.shortcut').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = el.dataset.url;
+        if (window.lumenGuest) window.lumenGuest.navigate(url);
+        else if (window.parent !== window) {
+          window.parent.postMessage({ type: 'lumen-navigate', query: url }, '*');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

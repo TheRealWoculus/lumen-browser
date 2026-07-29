@@ -1,0 +1,10 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource prefix="/">
+  <file>assets/themes/dark.qss</file>
+  <file>assets/themes/light.qss</file>
+  <file>assets/icons/lumen.png</file>
+  <file>assets/icons/lumen_32.png</file>
+  <file>assets/icons/lumen_256.png</file>
+</qresource>
+</RCC>

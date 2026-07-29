@@ -1,0 +1,81 @@
+{
+  "name": "lumen-browser",
+  "version": "1.0.0",
+  "description": "Lumen Browser — fast, private, cross-platform",
+  "main": "main/main.js",
+  "author": "Lumen Browser",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --linux --mac --win",
+    "compile": "npm install && electron-builder install-app-deps && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "io.lumen.browser",
+    "productName": "Lumen",
+    "directories": {
+      "output": "../releases"
+    },
+    "npmRebuild": true,
+    "asarUnpack": ["**/node_modules/node-llama-cpp/**/*", "**/node_modules/better-sqlite3/**/*"],
+    "files": [
+      "main/**/*",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage", "tar.gz"],
+      "category": "Network",
+      "icon": "../lumen_final/assets/icons/lumen_512.png"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "../lumen_final/assets/icons/lumen_512.png",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "../lumen.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "../lumen.ico",
+      "uninstallerIcon": "../lumen.ico",
+      "installerHeaderIcon": "../lumen.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lumen Browser"
+    },
+    "extraResources": [
+      {
+        "from": "../downloads",
+        "to": "downloads",
+        "filter": ["**/*"]
+      }
+    ]
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cheerio": "^1.0.0",
+    "node-llama-cpp": "^3.14.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}
