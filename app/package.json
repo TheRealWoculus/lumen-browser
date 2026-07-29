@@ -63,7 +63,7 @@
     },
   "extraResources": [
     {
-      "from": "../build/Uninstall_Lumen.exe",
+      "from": "build/Uninstall_Lumen.exe",
       "to": "Uninstall_Lumen.exe"
     }
   ]
