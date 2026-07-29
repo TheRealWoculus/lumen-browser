@@ -87,6 +87,7 @@
           <button type="button" class="snav" data-panel="vpn">VPN</button>
           <button type="button" class="snav" data-panel="bookmarks">Bookmarks</button>
           <button type="button" class="snav" data-panel="extensions">Extensions</button>
+          <button type="button" class="snav" data-panel="import">Import</button>
           <button type="button" class="snav settings-close-btn" id="settings-close">Close</button>
         </nav>
         <div class="settings-body-inline">
@@ -203,8 +204,21 @@
               <div id="extension-list"></div><p class="muted" id="extension-empty">None loaded.</p>
             </div>
           </section>
+          <section class="spanel" id="panel-import">
+            <div class="settings-inner">
+              <h3>Import from another browser</h3>
+              <p class="muted">Import bookmarks and browsing history from another browser installed on your machine.</p>
+              <div id="import-browser-select" class="import-browser-select"></div>
+              <div class="toggle-card" style="margin-top:12px"><div><strong>Import bookmarks</strong></div><label class="switch"><input type="checkbox" id="import-bookmarks-chk" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Import browsing history</strong></div><label class="switch"><input type="checkbox" id="import-history-chk" checked><span class="slider"></span></label></div>
+              <button type="button" class="btn-primary" id="btn-start-import" disabled style="margin-top:12px">Import</button>
+              <div id="import-progress" class="import-progress hidden"></div>
+              <div id="import-result" class="import-result hidden"></div>
+            </div>
+          </section>
         </div>
         <footer class="settings-foot-inline">
+          <div id="update-badge" class="update-badge hidden"></div>
           <button type="button" id="settings-save" class="btn-primary">Save Settings</button>
         </footer>
       </div>

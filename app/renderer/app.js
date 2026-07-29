@@ -1101,6 +1101,108 @@
       refreshLumenStats(); refreshPasswordList();
     });
     $('#btn-open-docs').addEventListener('click', async () => { const p = await window.lumen.resolvePath('lumen_browser.html'); const tab = getActiveTab(); if (tab) navigateTab(tab, `file://${p}`); toggleSettingsTab(); });
+
+    // Import browser
+    $('#btn-start-import').addEventListener('click', startImport);
+    setupImportUI();
+
+    // Update listener
+    window.lumen.onUpdateStatus((status) => handleUpdateStatus(status));
+  }
+
+  function setupImportUI() {
+    renderBrowserList();
+    $('#import-bookmarks-chk').addEventListener('change', updateImportButton);
+    $('#import-history-chk').addEventListener('change', updateImportButton);
+  }
+
+  async function renderBrowserList() {
+    const container = $('#import-browser-select');
+    try {
+      const browsers = await window.lumen.detectBrowsers();
+      if (!browsers || browsers.length === 0) {
+        container.innerHTML = '<p class="muted" style="padding:12px 0">No supported browsers detected.</p>';
+        return;
+      }
+      container.innerHTML = browsers.map((b, i) => `<label class="import-browser-opt${i === 0 ? ' sel' : ''}">
+        <input type="radio" name="import-browser" value="${b.id}" data-path="${b.profilePath}"${i === 0 ? ' checked' : ''}>
+        <span class="import-browser-name">${escapeHtml(b.name)}</span>
+      </label>`).join('');
+      container.querySelectorAll('input[name="import-browser"]').forEach((el) => {
+        el.addEventListener('change', () => {
+          container.querySelectorAll('.import-browser-opt').forEach((o) => o.classList.remove('sel'));
+          el.closest('.import-browser-opt')?.classList.add('sel');
+          updateImportButton();
+        });
+      });
+      updateImportButton();
+    } catch { container.innerHTML = '<p class="muted" style="padding:12px 0">Could not scan for browsers.</p>'; }
+  }
+
+  function updateImportButton() {
+    const sel = document.querySelector('input[name="import-browser"]:checked');
+    const chk = $('#import-bookmarks-chk').checked || $('#import-history-chk').checked;
+    $('#btn-start-import').disabled = !(sel && chk);
+  }
+
+  async function startImport() {
+    const sel = document.querySelector('input[name="import-browser"]:checked');
+    if (!sel) { toast('Select a browser first'); return; }
+    const browserId = sel.value;
+    const profilePath = sel.dataset.path;
+    const opts = { bookmarks: $('#import-bookmarks-chk').checked, history: $('#import-history-chk').checked };
+    const btn = $('#btn-start-import');
+    btn.disabled = true;
+    btn.textContent = 'Importing...';
+    $('#import-progress').classList.remove('hidden');
+    $('#import-progress').textContent = 'Reading browser data...';
+    $('#import-result').classList.add('hidden');
+    try {
+      const result = await window.lumen.importBrowserData(browserId, profilePath, opts);
+      $('#import-progress').classList.add('hidden');
+      $('#import-result').classList.remove('hidden');
+      if (result.success) {
+        const parts = [];
+        if (result.bookmarks > 0) parts.push(`${result.bookmarks} bookmarks`);
+        if (result.history > 0) parts.push(`${result.history} history entries`);
+        $('#import-result').innerHTML = `<span style="color:#6EE7B7">✓ Imported ${parts.join(', ') || 'nothing new'}.</span>`;
+        toast(`Imported ${parts.join(', ') || 'nothing new'} from ${sel.closest('.import-browser-opt')?.querySelector('.import-browser-name')?.textContent || 'browser'}`);
+        refreshBookmarkList();
+      } else {
+        $('#import-result').innerHTML = `<span style="color:#EF4444">✗ ${escapeHtml(result.error || 'Import failed')}</span>`;
+      }
+    } catch (err) {
+      $('#import-progress').classList.add('hidden');
+      $('#import-result').classList.remove('hidden');
+      $('#import-result').innerHTML = `<span style="color:#EF4444">✗ ${escapeHtml(err.message || 'Import failed')}</span>`;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Import';
+  }
+
+  let updateState = null;
+
+  function handleUpdateStatus(status) {
+    updateState = status;
+    const badge = $('#update-badge');
+    if (!badge) return;
+    badge.classList.remove('hidden');
+    if (status.status === 'available') {
+      badge.innerHTML = `<span style="color:#FBBF24">● Update ${status.version} available</span>`;
+      badge.addEventListener('click', () => window.lumen.checkForUpdates());
+    } else if (status.status === 'downloading') {
+      badge.innerHTML = `<span>⬇ Downloading ${Math.round(status.percent)}%</span>`;
+    } else if (status.status === 'downloaded') {
+      badge.innerHTML = `<span style="color:#6EE7B7">● Restart to update</span>`;
+      badge.style.cursor = 'pointer';
+      badge.addEventListener('click', () => window.lumen.restartAndUpdate());
+    } else if (status.status === 'uptodate') {
+      badge.innerHTML = `<span style="color:#6EE7B7">✓ Up to date</span>`;
+      setTimeout(() => badge.classList.add('hidden'), 5000);
+    } else if (status.status === 'error') {
+      badge.innerHTML = `<span style="color:#EF4444">● Update error</span>`;
+      setTimeout(() => badge.classList.add('hidden'), 8000);
+    }
   }
 
   async function loadSettings() {

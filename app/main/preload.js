@@ -52,4 +52,9 @@ contextBridge.exposeInMainWorld('lumen', {
   getBrowserHistory: () => ipcRenderer.invoke('get-browser-history'),
   clearBrowserHistory: () => ipcRenderer.invoke('clear-browser-history'),
   downloadFile: (url) => ipcRenderer.invoke('download-file', url),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  restartAndUpdate: () => ipcRenderer.invoke('restart-and-update'),
+  onUpdateStatus: (cb) => { ipcRenderer.on('update-status', (_e, data) => cb(data)); },
+  detectBrowsers: () => ipcRenderer.invoke('detect-browsers'),
+  importBrowserData: (browserId, profilePath, opts) => ipcRenderer.invoke('import-browser-data', browserId, profilePath, opts),
 });

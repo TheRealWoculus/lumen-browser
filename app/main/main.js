@@ -1,8 +1,13 @@
 const { app, BrowserWindow, ipcMain, shell, session, nativeTheme, dialog, Menu, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { LumenSearchEngine } = require('./lumen-search');
 const localAi = require('./local-ai');
+
+let autoUpdater = null;
+try { autoUpdater = require('electron-updater').autoUpdater; } catch {} 
+const isPackaged = app.isPackaged;
 
 const isMac = process.platform === 'darwin';
 let mainWindow = null;
@@ -217,6 +222,169 @@ function createWindow() {
 
   ensureSearchEngine(settings);
 }
+
+// ── Auto-updater ───────────────────────────────────────────
+function setupAutoUpdater() {
+  if (!autoUpdater || !isPackaged) return;
+  autoUpdater.setFeedURL({ provider: 'github', owner: 'TheRealWoculus', repo: 'lumen-browser' });
+  autoUpdater.checkForUpdates();
+  setInterval(() => autoUpdater.checkForUpdates(), 3600000);
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('update-status', { status: 'available', version: info.version, releaseDate: info.releaseDate });
+  });
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('update-status', { status: 'uptodate' });
+  });
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('update-status', { status: 'downloading', percent: progress.percent, bytesPerSecond: progress.bytesPerSecond });
+  });
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow?.webContents.send('update-status', { status: 'downloaded', version: info.version });
+  });
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('update-status', { status: 'error', message: err.message });
+  });
+}
+
+// ── Browser Import ─────────────────────────────────────────
+const BROWSER_PROFILES = {
+  chrome: {
+    name: 'Google Chrome', win: '%LOCALAPPDATA%\\Google\\Chrome\\User Data',
+    mac: '~/Library/Application Support/Google/Chrome',
+    linux: '~/.config/google-chrome', chromium: true,
+  },
+  brave: {
+    name: 'Brave', win: '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data',
+    mac: '~/Library/Application Support/BraveSoftware/Brave-Browser',
+    linux: '~/.config/BraveSoftware/Brave-Browser', chromium: true,
+  },
+  vivaldi: {
+    name: 'Vivaldi', win: '%LOCALAPPDATA%\\Vivaldi\\User Data',
+    mac: '~/Library/Application Support/Vivaldi',
+    linux: '~/.config/vivaldi', chromium: true,
+  },
+  edge: {
+    name: 'Microsoft Edge', win: '%LOCALAPPDATA%\\Microsoft\\Edge\\User Data',
+    mac: '~/Library/Application Support/Microsoft Edge',
+    linux: '~/.config/microsoft-edge', chromium: true,
+  },
+  opera: {
+    name: 'Opera', win: '%APPDATA%\\Opera Software\\Opera Stable',
+    mac: '~/Library/Application Support/com.operasoftware.Opera',
+    linux: '~/.config/opera', chromium: true,
+  },
+  arc: {
+    name: 'Arc', win: '%LOCALAPPDATA%\\Arc\\User Data',
+    mac: '~/Library/Application Support/Arc',
+    linux: '~/.config/arc', chromium: true,
+  },
+  firefox: {
+    name: 'Firefox', win: '%APPDATA%\\Mozilla\\Firefox\\Profiles',
+    mac: '~/Library/Application Support/Firefox/Profiles',
+    linux: '~/.mozilla/firefox', chromium: false,
+  },
+  'zen-browser': {
+    name: 'Zen Browser', win: '%APPDATA%\\zen\\Profiles',
+    mac: '~/Library/Application Support/zen/Profiles',
+    linux: '~/.zen', chromium: false,
+  },
+};
+
+function expandPath(p) {
+  let out = p.replace(/%LOCALAPPDATA%/g, process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'));
+  out = out.replace(/%APPDATA%/g, process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'));
+  out = out.replace(/^~/, os.homedir());
+  return out;
+}
+
+function getBrowserProfiles() {
+  const results = [];
+  for (const [key, cfg] of Object.entries(BROWSER_PROFILES)) {
+    try {
+      const platformKey = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'mac' : 'linux';
+      const baseDir = expandPath(cfg[platformKey]);
+      if (!fs.existsSync(baseDir)) continue;
+      if (cfg.chromium) {
+        if (fs.existsSync(path.join(baseDir, 'Default', 'Bookmarks'))) {
+          results.push({ id: key, name: cfg.name, profilePath: path.join(baseDir, 'Default') });
+        }
+      } else {
+        const dirs = fs.readdirSync(baseDir).filter((d) => d.endsWith('.default-release') || d.endsWith('.default'));
+        for (const d of dirs) {
+          const pp = path.join(baseDir, d);
+          if (fs.existsSync(path.join(pp, 'places.sqlite'))) {
+            results.push({ id: key, name: cfg.name, profilePath: pp });
+            break;
+          }
+        }
+      }
+    } catch {}
+  }
+  return results;
+}
+
+function importChromiumBookmarks(profilePath) {
+  try {
+    const bmFile = path.join(profilePath, 'Bookmarks');
+    if (!fs.existsSync(bmFile)) return [];
+    const raw = JSON.parse(fs.readFileSync(bmFile, 'utf8'));
+    const entries = [];
+    function walk(node) {
+      if (node.url && (node.url.startsWith('http:') || node.url.startsWith('https:'))) {
+        entries.push({ url: node.url, title: (node.name || '').trim(), time: node.date_added ? Math.floor(parseInt(node.date_added) / 1000000) : Date.now() });
+      }
+      if (node.children) node.children.forEach(walk);
+    }
+    if (raw.roots) Object.values(raw.roots).forEach(walk);
+    return entries;
+  } catch { return []; }
+}
+
+function importChromiumHistory(profilePath) {
+  try {
+    const db = new (require('better-sqlite3'))(path.join(profilePath, 'History'), { readonly: true, fileMustExist: true });
+    const rows = db.prepare('SELECT url, title, last_visit_time FROM urls WHERE url LIKE "http%" ORDER BY last_visit_time DESC LIMIT 1000').all();
+    db.close();
+    return rows.map((r) => ({ url: r.url, title: (r.title || '').trim(), time: Math.floor(r.last_visit_time / 1000000 - 11644473600) }));
+  } catch { return []; }
+}
+
+function importFirefoxPlaces(profilePath) {
+  const bookmarks = [];
+  const history = [];
+  try {
+    const db = new (require('better-sqlite3'))(path.join(profilePath, 'places.sqlite'), { readonly: true, fileMustExist: true });
+    const bmRows = db.prepare(`
+      SELECT b.title, p.url, b.dateAdded FROM moz_bookmarks b
+      JOIN moz_places p ON b.fk = p.id
+      WHERE p.url LIKE "http%" AND b.type = 1
+      ORDER BY b.dateAdded DESC LIMIT 2000
+    `).all();
+    for (const r of bmRows) {
+      if (r.url && (r.url.startsWith('http:') || r.url.startsWith('https:'))) {
+        bookmarks.push({ url: r.url, title: (r.title || '').trim(), time: Math.floor(r.dateAdded / 1000) });
+      }
+    }
+    const histRows = db.prepare(`
+      SELECT url, title, visit_date FROM moz_places
+      WHERE url LIKE "http%" ORDER BY last_visit_date DESC LIMIT 1000
+    `).all();
+    for (const r of histRows) {
+      history.push({ url: r.url, title: (r.title || '').trim(), time: Math.floor((r.visit_date || 0) / 1000) });
+    }
+    db.close();
+  } catch {}
+  return { bookmarks, history };
+}
+
+// ── Auto-updater IPC ───────────────────────────────────────
+ipcMain.handle('check-for-updates', () => {
+  if (autoUpdater && isPackaged) { autoUpdater.checkForUpdates(); return { checking: true }; }
+  return { checking: false, error: 'Not available in dev mode' };
+});
+ipcMain.handle('restart-and-update', () => {
+  if (autoUpdater && isPackaged) { autoUpdater.quitAndInstall(); }
+});
 
 app.whenReady().then(() => {
   createWindow();
@@ -484,3 +652,43 @@ ipcMain.handle('download-file', (_e, url) => {
   mainWindow?.webContents.downloadURL(url);
   return true;
 });
+
+// ── Browser import IPC ─────────────────────────────────────
+ipcMain.handle('detect-browsers', () => getBrowserProfiles());
+
+ipcMain.handle('import-browser-data', (_e, browserId, profilePath, opts = {}) => {
+  const { bookmarks: importBookmarks = true, history: importHistory = true } = opts;
+  const cfg = BROWSER_PROFILES[browserId];
+  if (!cfg) return { success: false, error: 'Unknown browser' };
+  let importedBookmarks = [];
+  let importedHistory = [];
+  if (cfg.chromium) {
+    if (importBookmarks) importedBookmarks = importChromiumBookmarks(profilePath);
+    if (importHistory) importedHistory = importChromiumHistory(profilePath);
+  } else {
+    const data = importFirefoxPlaces(profilePath);
+    if (importBookmarks) importedBookmarks = data.bookmarks;
+    if (importHistory) importedHistory = data.history;
+  }
+  const s = loadSettings();
+  const result = { bookmarks: 0, history: 0 };
+  if (importedBookmarks.length > 0) {
+    const existingUrls = new Set((s.bookmarks || []).map((b) => b.url));
+    for (const bm of importedBookmarks) {
+      if (!existingUrls.has(bm.url)) { s.bookmarks.push(bm); existingUrls.add(bm.url); result.bookmarks++; }
+    }
+  }
+  if (importedHistory.length > 0) {
+    const existingUrls = new Set((s.browserHistory || []).slice(0, 500).map((h) => h.url));
+    let added = 0;
+    for (const h of importedHistory) {
+      if (!existingUrls.has(h.url) && added < 500) { s.browserHistory.push(h); existingUrls.add(h.url); result.history++; added++; }
+    }
+    if (s.browserHistory.length > 1000) s.browserHistory.length = 1000;
+  }
+  saveSettings(s);
+  return { success: true, ...result };
+});
+
+// ── Auto-updater setup after window ────────────────────────
+setTimeout(setupAutoUpdater, 3000);

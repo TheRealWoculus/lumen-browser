@@ -926,3 +926,32 @@ body.split-mode .webview-pane.split-left { border-right: 1px solid var(--bd); }
 body.split-mode .webview-pane.split-right { border-left: 1px solid var(--bd); }
 body.settings-mode .webview-pane.active { display: none; }
 #btn-split.on { color: var(--accent); background: #7c3aed22; }
+
+/* Import browser UI */
+.import-browser-select { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.import-browser-opt {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  background: var(--bg2); border: 1.5px solid var(--bd); border-radius: 8px;
+  cursor: pointer; transition: all .15s; font-size: 13px; color: var(--t1);
+}
+.import-browser-opt:hover { border-color: var(--accent); background: #7C3AED11; }
+.import-browser-opt.sel { border-color: var(--accent); background: #7C3AED22; }
+.import-browser-opt input[type="radio"] { accent-color: var(--accent); }
+.import-browser-name { font-weight: 500; }
+.import-progress {
+  margin-top: 8px; padding: 10px 12px; background: var(--bg2);
+  border-radius: 8px; font-size: 12px; color: var(--t2); text-align: center;
+}
+.import-progress.hidden { display: none; }
+.import-result {
+  margin-top: 8px; padding: 10px 12px; background: var(--bg2);
+  border-radius: 8px; font-size: 13px;
+}
+.import-result.hidden { display: none; }
+
+/* Update badge */
+.update-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; cursor: default; margin-right: auto;
+}
+.update-badge.hidden { display: none; }

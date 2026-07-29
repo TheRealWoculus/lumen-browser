@@ -28,15 +28,23 @@
       "renderer/**/*",
       "assets/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "TheRealWoculus",
+      "repo": "lumen-browser",
+      "private": true
+    },
     "linux": {
       "target": ["AppImage", "tar.gz"],
       "category": "Network",
-      "icon": "../lumen_final/assets/icons/lumen_512.png"
+      "icon": "../lumen_final/assets/icons/lumen_512.png",
+      "artifactName": "${productName}-${version}-linux.${ext}"
     },
     "mac": {
       "target": ["dmg", "zip"],
       "icon": "../lumen_final/assets/icons/lumen_512.png",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${version}-mac.${ext}"
     },
     "win": {
       "target": [
@@ -49,7 +57,8 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "../lumen.ico"
+      "icon": "../lumen.ico",
+      "artifactName": "${productName}-${version}-win.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -71,6 +80,7 @@
   "dependencies": {
     "better-sqlite3": "^11.7.0",
     "cheerio": "^1.0.0",
+    "electron-updater": "^6.3.9",
     "node-llama-cpp": "^3.14.0"
   },
   "devDependencies": {
