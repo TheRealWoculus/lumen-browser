@@ -150,6 +150,29 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
+  // Custom application menu – remove conflicting shortcuts (Ctrl+F, etc.)
+  const appMenuTemplate = [
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    { role: 'fileMenu', submenu: [
+      { role: 'quit' }
+    ]},
+    { role: 'editMenu', submenu: [
+      { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+      { role: 'cut' }, { role: 'copy' }, { role: 'paste' },
+      { role: 'selectAll' }
+    ]},
+    { role: 'viewMenu', submenu: [
+      { role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' },
+      { type: 'separator' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' },
+      { type: 'separator' }, { role: 'togglefullscreen' }
+    ]},
+    { role: 'windowMenu', submenu: [
+      { role: 'minimize' }, { role: 'zoom' }, { role: 'close' }
+    ]},
+  ];
+  const appMenu = Menu.buildFromTemplate(appMenuTemplate);
+  Menu.setApplicationMenu(appMenu);
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http')) { mainWindow.webContents.send('open-url-new-tab', url); return { action: 'deny' }; }
     return { action: 'allow' };
@@ -218,6 +241,15 @@ function createWindow() {
     );
     const menu = Menu.buildFromTemplate(template);
     menu.popup({ window: mainWindow });
+  });
+
+  // Forward keyboard shortcuts from webview focus to renderer
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (!input.control && !input.meta) return;
+    const handled = ['t', 'w', 'l', 'f', 'r', 'd', 'h', ',', 'tab', '=', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    if (handled.includes(input.key.toLowerCase())) {
+      mainWindow.webContents.send('app-shortcut', { key: input.key, ctrl: input.control, meta: input.meta, shift: input.shift });
+    }
   });
 
   ensureSearchEngine(settings);

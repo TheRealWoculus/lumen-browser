@@ -57,4 +57,5 @@ contextBridge.exposeInMainWorld('lumen', {
   onUpdateStatus: (cb) => { ipcRenderer.on('update-status', (_e, data) => cb(data)); },
   detectBrowsers: () => ipcRenderer.invoke('detect-browsers'),
   importBrowserData: (browserId, profilePath, opts) => ipcRenderer.invoke('import-browser-data', browserId, profilePath, opts),
+  onAppShortcut: (cb) => { ipcRenderer.on('app-shortcut', (_e, data) => cb(data)); },
 });

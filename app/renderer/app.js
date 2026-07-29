@@ -143,6 +143,9 @@
       $('#find-input').value = '';
       $('#find-input').focus();
       $('#find-results').textContent = '';
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(bar, { y: [-8, 0], opacity: [0, 1] }, { duration: 0.15, easing: 'ease-out' });
+      }
     } else {
       getActiveWebview()?.stopFindInPage('clearSelection');
     }
@@ -634,21 +637,23 @@
     const tab = { id, title: isSettings ? 'Settings' : 'New Tab', url: '', urlDisplay: isSettings ? urlInput : 'lumen://newtab', pinned: false, hibernated: false, group: null };
     tabs.push(tab);
     activeTabId = id;
-    const pane = document.createElement('div');
-    pane.className = 'webview-pane active';
-    pane.id = `pane-${id}`;
-    const wv = document.createElement('webview');
-    wv.id = `wv-${id}`;
-    wv.setAttribute('partition', 'persist:lumen');
-    wv.setAttribute('allowpopups', 'true');
-    if (guestPreloadPath) wv.setAttribute('preload', guestPreloadPath);
-    if (adultModeActive) wv.addEventListener('will-navigate', (e) => checkBlockNavigation(e, tab));
-    wv.addEventListener('ipc-message', (e) => { if (e.channel === 'lumen-navigate') navigateTab(tab, e.args[0]); });
-    wv.src = 'about:blank';
-    pane.appendChild(wv);
-    $('#webview-stack').appendChild(pane);
-    $$('.webview-pane').forEach((p) => { if (p.id !== `pane-${id}`) p.classList.remove('active'); });
-    bindWebview(wv, tab);
+    if (!isSettings) {
+      const pane = document.createElement('div');
+      pane.className = 'webview-pane active';
+      pane.id = `pane-${id}`;
+      const wv = document.createElement('webview');
+      wv.id = `wv-${id}`;
+      wv.setAttribute('partition', 'persist:lumen');
+      wv.setAttribute('allowpopups', 'true');
+      if (guestPreloadPath) wv.setAttribute('preload', guestPreloadPath);
+      if (adultModeActive) wv.addEventListener('will-navigate', (e) => checkBlockNavigation(e, tab));
+      wv.addEventListener('ipc-message', (e) => { if (e.channel === 'lumen-navigate') navigateTab(tab, e.args[0]); });
+      wv.src = 'about:blank';
+      pane.appendChild(wv);
+      $('#webview-stack').appendChild(pane);
+      $$('.webview-pane').forEach((p) => { if (p.id !== `pane-${id}`) p.classList.remove('active'); });
+      bindWebview(wv, tab);
+    }
     renderTabs();
     navigateTab(tab, urlInput);
     return tab;
@@ -836,14 +841,18 @@
         dd.appendChild(item);
       });
     }
-    input.addEventListener('focus', async () => { currentResults = await buildResults(input.value); renderDropdown(currentResults); dd.classList.remove('hidden'); });
+    input.addEventListener('focus', async () => { currentResults = await buildResults(input.value); renderDropdown(currentResults); dd.classList.remove('hidden');
+      if (typeof anime !== 'undefined') {
+        anime({ targets: '#omnibox-lock svg', scale: [1, 1.15, 1], duration: 300, easing: 'easeOutCubic' });
+      }
+    });
     input.addEventListener('input', async () => { selectedIdx = -1; currentResults = await buildResults(input.value); renderDropdown(currentResults); dd.classList.remove('hidden'); });
     input.addEventListener('keydown', async (e) => {
       if (e.key === 'ArrowDown') { e.preventDefault(); selectedIdx = Math.min(selectedIdx + 1, currentResults.length - 1); renderDropdown(currentResults); const hl = dd.querySelector('.omni-item.hl'); hl?.scrollIntoView({ block: 'nearest' }); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); selectedIdx = Math.max(selectedIdx - 1, -1); renderDropdown(currentResults); }
       else if (e.key === 'Enter') {
         if (selectedIdx >= 0 && currentResults[selectedIdx]) { e.preventDefault(); const r = currentResults[selectedIdx]; closeDropdown(); const tab = getActiveTab(); if (tab) navigateTab(tab, r.url || r.query); }
-        else closeDropdown();
+        else { e.preventDefault(); closeDropdown(); const tab = getActiveTab(); if (tab) navigateTab(tab, input.value); }
       }
       else if (e.key === 'Escape') closeDropdown();
     });
@@ -886,11 +895,82 @@
   }
 
   function openHistoryPanel() {
-    openSettingsTab('history');
+    const panel = $('#history-overlay');
+    if (!panel) {
+      const div = document.createElement('div');
+      div.id = 'history-overlay';
+      div.className = 'list-overlay';
+      div.innerHTML = `<div class="list-overlay-header"><span>History</span><button type="button" class="list-overlay-close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div id="history-overlay-list" class="list-overlay-body"></div>`;
+      document.body.appendChild(div);
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(div, { y: [-10, 0], opacity: [0, 1] }, { duration: 0.15, easing: 'ease-out' });
+      }
+      div.querySelector('.list-overlay-close').addEventListener('click', () => {
+        if (typeof Motion !== 'undefined') {
+          Motion.animate(div, { opacity: 0, scale: 0.95 }, { duration: 0.1, onComplete: () => div.remove() });
+        } else div.remove();
+      });
+      refreshHistoryOverlay();
+    } else {
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(panel, { opacity: 0, scale: 0.95 }, { duration: 0.1, onComplete: () => panel.remove() });
+      } else panel.remove();
+    }
+  }
+
+  async function refreshHistoryOverlay() {
+    const container = $('#history-overlay-list');
+    if (!container) return;
+    const history = await window.lumen.getBrowserHistory();
+    if (history.length === 0) { container.innerHTML = '<p class="muted" style="padding:16px;text-align:center">No browsing history yet.</p>'; return; }
+    container.innerHTML = history.slice(0, 50).map((h) => {
+      const timeStr = h.time ? new Date(h.time).toLocaleString() : '';
+      return `<div class="list-overlay-item" data-url="${escapeHtml(h.url)}"><div class="info"><div class="site">${escapeHtml(h.title || h.url)}</div><div class="creds">${escapeHtml(h.url)} · ${timeStr}</div></div></div>`;
+    }).join('');
+    container.querySelectorAll('.list-overlay-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        const tab = getActiveTab();
+        if (tab) navigateTab(tab, el.dataset.url);
+        el.closest('.list-overlay')?.remove();
+      });
+    });
   }
 
   function openDownloadsPanel() {
-    openSettingsTab('downloads');
+    const panel = $('#downloads-overlay');
+    if (!panel) {
+      const div = document.createElement('div');
+      div.id = 'downloads-overlay';
+      div.className = 'list-overlay';
+      div.innerHTML = `<div class="list-overlay-header"><span>Downloads</span><button type="button" class="list-overlay-close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div id="downloads-overlay-list" class="list-overlay-body"></div>`;
+      document.body.appendChild(div);
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(div, { y: [-10, 0], opacity: [0, 1] }, { duration: 0.15, easing: 'ease-out' });
+      }
+      div.querySelector('.list-overlay-close').addEventListener('click', () => {
+        if (typeof Motion !== 'undefined') {
+          Motion.animate(div, { opacity: 0, scale: 0.95 }, { duration: 0.1, onComplete: () => div.remove() });
+        } else div.remove();
+      });
+      refreshDownloadsOverlay();
+    } else {
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(panel, { opacity: 0, scale: 0.95 }, { duration: 0.1, onComplete: () => panel.remove() });
+      } else panel.remove();
+    }
+  }
+
+  async function refreshDownloadsOverlay() {
+    const container = $('#downloads-overlay-list');
+    if (!container) return;
+    const dl = await window.lumen.getDownloads();
+    const list = dl || activeDownloads;
+    if (list.length === 0) { container.innerHTML = '<p class="muted" style="padding:16px;text-align:center">No downloads.</p>'; return; }
+    container.innerHTML = list.slice(0, 20).map((d) => {
+      const pct = d.total > 0 ? Math.round((d.received / d.total) * 100) : 0;
+      const stateIcon = d.state === 'done' ? '✓' : d.state === 'failed' ? '✗' : `${pct}%`;
+      return `<div class="list-overlay-item"><div class="info"><div class="site">${escapeHtml(d.name)}</div><div class="creds">${stateIcon}${d.state === 'progressing' ? ` · ${(d.received / 1024 / 1024).toFixed(1)} MB of ${(d.total / 1024 / 1024).toFixed(1)} MB` : ''}</div></div></div>`;
+    }).join('');
   }
 
   function setupToolbar() {
@@ -900,9 +980,6 @@
     $('#btn-home').addEventListener('click', () => { const tab = getActiveTab(); if (tab) navigateTab(tab, settings.homePage || 'lumen://newtab'); });
     $('#btn-bookmark').addEventListener('click', toggleBookmark);
     $('#btn-downloads').addEventListener('click', openDownloadsPanel);
-    $('#omnibox').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { const tab = getActiveTab(); if (tab) navigateTab(tab, e.target.value); $('#omnibox-dropdown').classList.add('hidden'); }
-    });
   }
 
   function setupTitlebar() {
@@ -1465,6 +1542,17 @@
     });
     window.lumen.onNavigationBlocked?.((url) => { toast(`Blocked: ${url} (18+ Mode)`); });
     setupWelcome();
+
+    window.lumen.onAppShortcut?.(({ key, ctrl, meta, shift }) => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: ctrl, metaKey: meta, shiftKey: shift, bubbles: true }));
+    });
+
+    // Subtle entrance animation with motion.dev
+    if (typeof Motion !== 'undefined') {
+      Motion.animate($('#tabstrip'), { y: [-6, 0], opacity: [0, 1] }, { duration: 0.2, easing: 'ease-out' });
+      Motion.animate($('.toolbar'), { y: [-4, 0], opacity: [0, 1] }, { duration: 0.2, delay: 0.05, easing: 'ease-out' });
+    }
+
     if (!settings.firstRun) { const restored = await loadSavedTabs(); if (!restored) createTab('lumen://newtab'); }
     setInterval(refreshLumenStats, 15000); setInterval(refreshPasswordList, 30000); setInterval(refreshBookmarkList, 10000); setInterval(refreshHistoryList, 15000);
   }

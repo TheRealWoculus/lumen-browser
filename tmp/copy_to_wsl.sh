@@ -1,0 +1,13 @@
+SRC_BASE="/mnt/c/Users/woculuss/iCloudDrive/Windows 11 Desktop/Coding Projects/arch linux coding projects/coding projects/lumen-browser/app"
+DST="/root/lumen-builder/app"
+
+echo "Copying files..."
+cp -f "$SRC_BASE/renderer/app.js" "$DST/renderer/"
+cp -f "$SRC_BASE/renderer/index.html" "$DST/renderer/"
+cp -f "$SRC_BASE/renderer/styles.css" "$DST/renderer/"
+cp -f "$SRC_BASE/renderer/newtab.html" "$DST/renderer/"
+cp -rf "$SRC_BASE/renderer/vendor" "$DST/renderer/"
+cp -f "$SRC_BASE/package.json" "$DST/"
+cp -f "$SRC_BASE/package-lock.json" "$DST/"
+cp -f "$SRC_BASE/main/guest-preload.js" "$DST/main/"
+echo "Copy done"

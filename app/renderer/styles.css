@@ -520,6 +520,18 @@ webview {
 .bookmark-add-form { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
 .bookmark-add-input { background:var(--bg2); border:1px solid var(--bd); border-radius:6px; padding:8px 10px; color:var(--fg); font-size:13px; outline:none; }
 .bookmark-add-input:focus { border-color:var(--accent); }
+
+/* List overlays (history, downloads) */
+.list-overlay { position:fixed; top:96px; right:16px; width:380px; max-height:60vh; background:var(--bg2); border:1px solid var(--bd); border-radius:10px; z-index:9998; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+.list-overlay-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--bd); font-size:13px; font-weight:600; color:var(--t1); }
+.list-overlay-close { background:none; border:none; color:var(--t3); cursor:pointer; padding:4px; border-radius:4px; display:flex; }
+.list-overlay-close:hover { background:var(--bg3); color:var(--t1); }
+.list-overlay-body { overflow-y:auto; flex:1; }
+.list-overlay-item { display:flex; align-items:center; padding:8px 14px; cursor:pointer; border-bottom:1px solid var(--bd); gap:8px; }
+.list-overlay-item:hover { background:var(--bg3); }
+.list-overlay-item .info { flex:1; min-width:0; }
+.list-overlay-item .site { font-size:12px; color:var(--t0); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.list-overlay-item .creds { font-size:11px; color:var(--t3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .omni-item .calc { color: #06B6D4; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
 
 /* Welcome overlay */
