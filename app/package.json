@@ -61,13 +61,12 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Lumen Browser"
     },
-    "extraResources": [
-      {
-        "from": "../downloads",
-        "to": "downloads",
-        "filter": ["**/*"]
-      }
-    ]
+  "extraResources": [
+    {
+      "from": "../build/Uninstall_Lumen.exe",
+      "to": "Uninstall_Lumen.exe"
+    }
+  ]
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
