@@ -7,6 +7,8 @@
   <title>Lumen</title>
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="vendor/motion.js"></script>
+  <script src="vendor/anime.min.js"></script>
 </head>
 <body>
   <header id="titlebar" class="titlebar">
@@ -86,9 +88,12 @@
           <button type="button" class="snav" data-panel="privacy">Privacy</button>
           <button type="button" class="snav" data-panel="vpn">VPN</button>
           <button type="button" class="snav" data-panel="bookmarks">Bookmarks</button>
+          <button type="button" class="snav" data-panel="tabs">Tabs</button>
+          <button type="button" class="snav" data-panel="system">System</button>
+          <button type="button" class="snav" data-panel="accessibility">Accessibility</button>
           <button type="button" class="snav" data-panel="extensions">Extensions</button>
           <button type="button" class="snav" data-panel="import">Import</button>
-          <button type="button" class="snav settings-close-btn" id="settings-close">Close</button>
+          <button type="button" class="snav settings-close-btn" id="settings-close">Close Tab</button>
         </nav>
         <div class="settings-body-inline">
           <section class="spanel on" id="panel-appearance">
@@ -96,6 +101,11 @@
               <h3>Appearance</h3>
               <label class="field"><span>Accent color</span><input type="color" id="set-accent" value="#7C3AED"></label>
               <label class="field"><span>Secondary accent</span><input type="color" id="set-accent2" value="#06B6D4"></label>
+              <label class="field"><span>Theme</span><select id="set-theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></label>
+              <label class="field"><span>Toolbar style</span><select id="set-toolbar-style"><option value="default">Icons + URL bar</option><option value="icons">Icons only</option><option value="minimal">Minimal</option></select></label>
+              <div class="toggle-card"><div><strong>Show bookmark bar</strong><p>Show bookmarks as a bar below the toolbar.</p></div><label class="switch"><input type="checkbox" id="set-bm-bar"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Compact mode</strong><p>Reduce spacing in the UI.</p></div><label class="switch"><input type="checkbox" id="set-compact"><span class="slider"></span></label></div>
+              <hr style="border-color:var(--bd);margin:12px 0">
               <label class="field"><span>New tab wallpaper</span><div class="row"><input type="text" id="set-wallpaper" placeholder="URL or pick a file…" readonly><button type="button" id="btn-pick-wallpaper">Browse</button></div></label>
               <label class="field"><span>Wallpaper fit</span><select id="set-wallpaper-mode"><option value="cover">Cover</option><option value="contain">Contain</option><option value="center">Center</option></select></label>
             </div>
@@ -103,8 +113,8 @@
           <section class="spanel" id="panel-search">
             <div class="settings-inner">
               <h3>Search engines</h3>
-              <label class="field"><span>Default search</span><select id="set-default-search"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option><option value="lumen">Lumen Search</option></select></label>
               <div class="toggle-card"><div><strong>Lumen Search</strong><p>Private crawler that indexes the web locally.</p><p class="muted" id="lumen-stats">Index: 0 pages · 0 queued</p></div><label class="switch"><input type="checkbox" id="set-lumen-search"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Omnibox search suggestions</strong></div><label class="switch"><input type="checkbox" id="set-search-suggest" checked><span class="slider"></span></label></div>
             </div>
           </section>
           <section class="spanel" id="panel-ai">
@@ -124,7 +134,8 @@
             <div class="settings-inner">
               <h3>General</h3>
               <label class="field"><span>Home page</span><input type="text" id="set-home" value="lumen://newtab"></label>
-              <label class="field"><span>Theme</span><select id="set-theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></label>
+              <label class="field"><span>Default search engine</span><select id="set-default-search"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option><option value="lumen">Lumen Search</option></select></label>
+              <label class="field"><span>Language</span><select id="set-language"><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option><option value="ja">Japanese</option><option value="ko">Korean</option><option value="zh-CN">Chinese (Simplified)</option></select></label>
               <button type="button" class="btn-secondary" id="btn-open-docs">Open docs</button>
               <button type="button" class="btn-secondary" id="btn-clear-history" style="margin-top:8px">Clear search history</button>
             </div>
@@ -166,6 +177,9 @@
               <h3>Privacy & Safety</h3>
               <div class="toggle-card"><div><strong>18+ Mode</strong><p>Block adult content.</p></div><label class="switch"><input type="checkbox" id="set-adult-mode"><span class="slider"></span></label></div>
               <div class="toggle-card"><div><strong>Ad Blocker</strong><p>Block ad domains.</p></div><label class="switch"><input type="checkbox" id="set-adblock" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Do Not Track</strong><p>Ask websites not to track your browsing.</p></div><label class="switch"><input type="checkbox" id="set-dnt"><span class="slider"></span></label></div>
+              <label class="field"><span>Cookie behavior</span><select id="set-cookies"><option value="all">Allow all cookies</option><option value="block-third-party">Block third-party cookies</option><option value="block-all">Block all cookies</option></select></label>
+              <div class="toggle-card"><div><strong>Enable JavaScript</strong><p>Disable to block all JavaScript execution.</p></div><label class="switch"><input type="checkbox" id="set-javascript" checked><span class="slider"></span></label></div>
               <hr><h3>Clear Browsing Data</h3>
               <div class="toggle-card"><div><strong>Cache</strong></div><label class="switch"><input type="checkbox" id="clear-cache" checked><span class="slider"></span></label></div>
               <div class="toggle-card"><div><strong>Cookies</strong></div><label class="switch"><input type="checkbox" id="clear-cookies" checked><span class="slider"></span></label></div>
@@ -191,7 +205,13 @@
           <section class="spanel" id="panel-bookmarks">
             <div class="settings-inner">
               <h3>Bookmarks</h3>
-              <p class="muted">Ctrl+D to bookmark.</p>
+              <p class="muted">Ctrl+D to bookmark current page.</p>
+              <div class="bookmark-add-form">
+                <input type="text" id="bm-add-name" placeholder="Name" class="bm-add-input">
+                <input type="text" id="bm-add-url" placeholder="URL" class="bm-add-input">
+                <button type="button" class="btn-secondary" id="btn-add-bookmark" style="margin-top:4px">Add Bookmark</button>
+              </div>
+              <hr style="border-color:var(--bd);margin:12px 0">
               <div class="row"><button type="button" class="btn-secondary" id="btn-import-bookmarks" style="margin-top:0">Import (HTML)</button><button type="button" class="btn-secondary" id="btn-export-bookmarks" style="margin-top:0">Export (HTML)</button></div>
               <div id="bookmark-list"></div><p class="muted" id="bookmark-empty">No bookmarks.</p>
             </div>
@@ -202,6 +222,37 @@
               <p class="muted">Load unpacked Chrome extensions.</p>
               <button type="button" class="btn-secondary" id="btn-load-extension">Load unpacked...</button>
               <div id="extension-list"></div><p class="muted" id="extension-empty">None loaded.</p>
+            </div>
+          </section>
+          <section class="spanel" id="panel-tabs">
+            <div class="settings-inner">
+              <h3>Tab Behavior</h3>
+              <div class="toggle-card"><div><strong>Open new tabs next to current</strong></div><label class="switch"><input type="checkbox" id="set-tabs-next"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Warn before closing multiple tabs</strong></div><label class="switch"><input type="checkbox" id="set-tabs-warn"><span class="slider"></span></label></div>
+              <label class="field"><span>New tab position</span><select id="set-tab-position"><option value="end">End of tab strip</option><option value="next">Next to current tab</option></select></label>
+            </div>
+          </section>
+          <section class="spanel" id="panel-system">
+            <div class="settings-inner">
+              <h3>System</h3>
+              <label class="field"><span>Startup behavior</span><select id="set-startup"><option value="continue">Continue where I left off</option><option value="newtab">Open new tab page</option><option value="homepage">Open home page</option></select></label>
+              <label class="field"><span>Download location</span><div class="row"><input type="text" id="set-download-path" placeholder="Default download folder" readonly><button type="button" id="btn-pick-download">Browse</button></div></label>
+              <div class="toggle-card"><div><strong>Hardware acceleration</strong><p>Uses GPU to render pages. Disable if you experience graphical issues.</p></div><label class="switch"><input type="checkbox" id="set-hardware-accel" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Smooth scrolling</strong></div><label class="switch"><input type="checkbox" id="set-smooth-scroll" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Overlay scrollbars</strong></div><label class="switch"><input type="checkbox" id="set-overlay-scroll"><span class="slider"></span></label></div>
+              <label class="field"><span>UI font size</span><select id="set-font-size"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option></select></label>
+            </div>
+          </section>
+          <section class="spanel" id="panel-accessibility">
+            <div class="settings-inner">
+              <h3>Accessibility</h3>
+              <div class="toggle-card"><div><strong>Screen reader support</strong><p>Expose ARIA roles and enable assistive technology APIs.</p></div><label class="switch"><input type="checkbox" id="set-a11y-screen"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Force page zoom</strong><p>Override default page zoom level.</p></div><label class="switch"><input type="checkbox" id="set-a11y-force-zoom"><span class="slider"></span></label></div>
+              <label class="field"><span>Default zoom level</span><select id="set-a11y-zoom"><option value="50">50%</option><option value="75">75%</option><option value="90">90%</option><option value="100" selected>100%</option><option value="110">110%</option><option value="125">125%</option><option value="150">150%</option><option value="200">200%</option></select></label>
+              <div class="toggle-card"><div><strong>Reduced motion</strong><p>Minimize animations and transitions.</p></div><label class="switch"><input type="checkbox" id="set-a11y-motion"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>High contrast</strong><p>Increase contrast of UI elements.</p></div><label class="switch"><input type="checkbox" id="set-a11y-contrast"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Cursor focus ring</strong><p>Show a visible focus ring when navigating with keyboard.</p></div><label class="switch"><input type="checkbox" id="set-a11y-focus" checked><span class="slider"></span></label></div>
+              <label class="field"><span>Minimum font size</span><select id="set-a11y-min-font"><option value="0">None</option><option value="12">12px</option><option value="14">14px</option><option value="16">16px</option><option value="18">18px</option><option value="24">24px</option></select></label>
             </div>
           </section>
           <section class="spanel" id="panel-import">

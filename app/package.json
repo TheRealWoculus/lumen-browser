@@ -22,7 +22,10 @@
       "output": "../releases"
     },
     "npmRebuild": true,
-    "asarUnpack": ["**/node_modules/node-llama-cpp/**/*", "**/node_modules/better-sqlite3/**/*"],
+    "asarUnpack": [
+      "**/node_modules/node-llama-cpp/**/*",
+      "**/node_modules/better-sqlite3/**/*"
+    ],
     "files": [
       "main/**/*",
       "renderer/**/*",
@@ -35,13 +38,19 @@
       "private": true
     },
     "linux": {
-      "target": ["AppImage", "tar.gz"],
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
       "category": "Network",
       "icon": "../lumen_final/assets/icons/lumen_512.png",
       "artifactName": "${productName}-${version}-linux.${ext}"
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "../lumen_final/assets/icons/lumen_512.png",
       "category": "public.app-category.productivity",
       "artifactName": "${productName}-${version}-mac.${ext}"
@@ -50,11 +59,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "../lumen.ico",
@@ -70,17 +83,19 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Lumen Browser"
     },
-  "extraResources": [
-    {
-      "from": "build/Uninstall_Lumen.exe",
-      "to": "Uninstall_Lumen.exe"
-    }
-  ]
+    "extraResources": [
+      {
+        "from": "build/Uninstall_Lumen.exe",
+        "to": "Uninstall_Lumen.exe"
+      }
+    ]
   },
   "dependencies": {
+    "animejs": "^4.5.0",
     "better-sqlite3": "^11.7.0",
     "cheerio": "^1.0.0",
     "electron-updater": "^6.3.9",
+    "motion": "^12.43.0",
     "node-llama-cpp": "^3.14.0"
   },
   "devDependencies": {

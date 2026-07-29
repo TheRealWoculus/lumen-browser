@@ -13,6 +13,8 @@
   let recentlyClosed = [];
   let bookmarkState = {};
   let hibernationTimers = {};
+  let settingsTabId = null;
+  let tabStacksCollapsed = {};
   const aiHistory = [];
   let findOpen = false;
   let zoomLevel = 0;
@@ -39,7 +41,16 @@
     const el = $('#toast');
     el.textContent = msg;
     el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 2800);
+    if (typeof Motion !== 'undefined') {
+      Motion.animate(el, { opacity: [0, 1], y: [10, 0] }, { duration: 0.2, easing: 'ease-out' });
+    }
+    setTimeout(() => {
+      if (typeof Motion !== 'undefined') {
+        Motion.animate(el, { opacity: 0 }, { duration: 0.2, onComplete: () => el.classList.add('hidden') });
+      } else {
+        el.classList.add('hidden');
+      }
+    }, 2800);
   }
 
   function applyTheme(s) {
@@ -50,7 +61,6 @@
 
   function newTabId() { tabCounter += 1; return `tab-${tabCounter}`; }
 
-  let settingsOpen = false;
   let splitMode = false;
   let splitTabIds = [];
 
@@ -226,15 +236,40 @@
     }
   }
 
-  function toggleSettingsTab() {
-    settingsOpen = !settingsOpen;
-    $('#settings-panel').classList.toggle('hidden', !settingsOpen);
-    $('#webview-stack').classList.toggle('hidden', settingsOpen);
-    if (settingsOpen) {
-      loadSettings();
-      document.body.classList.add('settings-mode');
-    } else {
-      document.body.classList.remove('settings-mode');
+  function openSettingsTab(panel) {
+    if (settingsTabId) {
+      const existing = tabs.find((t) => t.id === settingsTabId);
+      if (existing) {
+        switchTab(settingsTabId);
+        if (panel) showSettingsPanel(panel);
+        return;
+      }
+      settingsTabId = null;
+    }
+    const url = panel ? `lumen://settings:${panel}` : 'lumen://settings';
+    const tab = createTab(url);
+    settingsTabId = tab.id;
+  }
+
+  function closeSettingsTab() {
+    if (settingsTabId) {
+      closeTab(settingsTabId);
+      settingsTabId = null;
+    }
+    $('#settings-panel').classList.add('hidden');
+    $('#webview-stack').classList.remove('hidden');
+  }
+
+  function showSettingsPanel(panel) {
+    loadSettings();
+    $$('.snav').forEach((b) => b.classList.remove('on'));
+    $$('.spanel').forEach((p) => p.classList.remove('on'));
+    if (panel) {
+      const navBtn = [...$$('.snav')].find((b) => b.dataset.panel === panel);
+      if (navBtn) { navBtn.classList.add('on'); document.getElementById(`panel-${panel}`)?.classList.add('on'); }
+      if (panel === 'history') refreshHistoryList();
+      if (panel === 'downloads') refreshDownloadsList();
+      if (panel === 'vpn') setupProxyUI();
     }
   }
 
@@ -307,45 +342,123 @@
     strip.innerHTML = '';
     const pinned = tabs.filter((t) => t.pinned);
     const unpinned = tabs.filter((t) => !t.pinned);
-    const ordered = [...pinned, ...unpinned];
-    let prevGroup = undefined;
-    for (const tab of ordered) {
+
+    // Render pinned tabs first
+    for (const tab of pinned) {
       const isActive = tab.id === activeTabId;
-      const isPinned = tab.pinned;
-      const isHibernated = tab.hibernated;
-      const group = tab.group;
-      if (group !== prevGroup && prevGroup !== undefined) {
-        const sep = document.createElement('div');
-        sep.className = 'tab-island-sep';
-        if (group) {
-          const color = getGroupColor(group);
-          sep.innerHTML = `<span class="tab-island-label" style="background:${color}18;color:${color}">${escapeHtml(group)}</span>`;
-        }
-        strip.appendChild(sep);
-      }
-      prevGroup = group;
       const el = document.createElement('div');
-      el.className = `tab${isActive ? ' active' : ''}${isPinned ? ' pinned' : ''}${isHibernated ? ' hibernated' : ''}`;
+      el.className = `tab${isActive ? ' active' : ''} pinned`;
       el.dataset.id = tab.id;
-      if (group) {
-        el.dataset.group = group;
-        const color = getGroupColor(group);
-        el.style.setProperty('--group-color', color);
-        el.style.borderLeft = `2px solid ${color}`;
+      const iconHtml = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>';
+      const titleHtml = `<span class="tab-title">${escapeHtml(tab.title || 'Tab')}</span>`;
+      el.innerHTML = iconHtml + titleHtml;
+      el.addEventListener('contextmenu', (e) => { e.preventDefault(); showTabContextMenu(tab, e.clientX, e.clientY); });
+      el.addEventListener('click', (e) => { switchTab(tab.id); });
+      strip.appendChild(el);
+    }
+
+    // Group unpinned tabs by their group
+    const groups = {};
+    const ungrouped = [];
+    for (const tab of unpinned) {
+      if (tab.group) {
+        if (!groups[tab.group]) groups[tab.group] = [];
+        groups[tab.group].push(tab);
+      } else {
+        ungrouped.push(tab);
       }
+    }
+
+    // Render each group as a stack
+    const groupNames = Object.keys(groups);
+    for (const gName of groupNames) {
+      const gTabs = groups[gName];
+      const isCollapsed = tabStacksCollapsed[gName];
+      const color = getGroupColor(gName);
+
+      const stack = document.createElement('div');
+      stack.className = 'tab-stack';
+      stack.dataset.group = gName;
+
+      // Stack header
+      const header = document.createElement('div');
+      header.className = 'tab-stack-header';
+      header.style.borderLeft = `2px solid ${color}`;
+      const hasActive = gTabs.some((t) => t.id === activeTabId);
+      if (hasActive) header.classList.add('has-active');
+      header.innerHTML = `
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="stack-chevron" style="transform:rotate(${isCollapsed ? '0' : '90'}deg)"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="stack-name">${escapeHtml(gName)}</span>
+        <span class="stack-count">${gTabs.length}</span>
+      `;
+      header.addEventListener('click', () => {
+        tabStacksCollapsed[gName] = !isCollapsed;
+        if (typeof Motion !== 'undefined' && !isCollapsed) {
+          // Animate collapse
+          const body = stack.querySelectorAll('.tab-in-stack');
+          Motion.animate(body, { opacity: [1, 0], height: ['auto', 0] }, { duration: 0.12, onComplete: () => renderTabs() });
+        } else {
+          renderTabs();
+        }
+      });
+      stack.appendChild(header);
+
+      // Stack body (tabs)
+      if (!isCollapsed) {
+        for (const tab of gTabs) {
+          const isActive = tab.id === activeTabId;
+          const isHibernated = tab.hibernated;
+          const el = document.createElement('div');
+          el.className = `tab${isActive ? ' active' : ''}${isHibernated ? ' hibernated' : ''} tab-in-stack`;
+          el.dataset.id = tab.id;
+          let iconHtml = '';
+          if (isHibernated) {
+            iconHtml = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+          }
+          const hibernateBtn = `<button class="tab-hibernate" type="button" title="Hibernate tab"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>`;
+          const titleHtml = `<span class="tab-title">${escapeHtml(tab.title || 'Tab')}</span>`;
+          const closeHtml = `<button class="tab-close" type="button"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+          el.innerHTML = iconHtml + titleHtml + hibernateBtn + closeHtml;
+          el.addEventListener('contextmenu', (e) => { e.preventDefault(); showTabContextMenu(tab, e.clientX, e.clientY); });
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('.tab-close')) closeTab(tab.id);
+            else if (e.target.closest('.tab-hibernate')) { e.stopPropagation(); toggleHibernateTab(tab.id); }
+            else switchTab(tab.id);
+          });
+          stack.appendChild(el);
+        }
+      }
+
+      strip.appendChild(stack);
+    }
+
+    // Render ungrouped tabs
+    for (const tab of ungrouped) {
+      const isSettings = (tab.url && tab.url.startsWith('lumen://settings')) || tab.urlDisplay === 'lumen://settings';
+      const isActive = tab.id === activeTabId;
+      const isHibernated = tab.hibernated;
+      const el = document.createElement('div');
+      el.className = `tab${isActive ? ' active' : ''}${isHibernated ? ' hibernated' : ''}${isSettings ? ' settings-tab' : ''}`;
+      el.dataset.id = tab.id;
       let iconHtml = '';
-      if (isPinned) {
-        iconHtml = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/></svg>';
+      if (isSettings) {
+        iconHtml = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
       } else if (isHibernated) {
         iconHtml = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
       }
+      const hibernateBtn = isHibernated || isSettings ? '' : `<button class="tab-hibernate" type="button" title="Hibernate tab"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>`;
       const titleHtml = `<span class="tab-title">${escapeHtml(tab.title || 'Tab')}</span>`;
       const closeHtml = `<button class="tab-close" type="button"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
-      el.innerHTML = iconHtml + titleHtml + (isActive || !isPinned ? closeHtml : '');
+      el.innerHTML = iconHtml + titleHtml + hibernateBtn + closeHtml;
       el.addEventListener('contextmenu', (e) => { e.preventDefault(); showTabContextMenu(tab, e.clientX, e.clientY); });
-      el.addEventListener('click', (e) => { if (e.target.closest('.tab-close')) closeTab(tab.id); else switchTab(tab.id); });
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.tab-close')) closeTab(tab.id);
+        else if (e.target.closest('.tab-hibernate')) { e.stopPropagation(); toggleHibernateTab(tab.id); }
+        else switchTab(tab.id);
+      });
       strip.appendChild(el);
     }
+
     const add = document.createElement('button');
     add.className = 'tab-new';
     add.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -450,6 +563,27 @@
     if (!tab) return;
     if (tab.hibernated) toggleHibernateTab(id);
     activeTabId = id;
+
+    // Show/hide settings panel when switching to/from settings tab
+    const isSettingsTab = tab.url && tab.url.startsWith('lumen://settings');
+    if (isSettingsTab) {
+      $('#settings-panel').classList.remove('hidden');
+      $('#webview-stack').classList.add('hidden');
+      document.body.classList.add('settings-mode');
+      if (typeof Motion !== 'undefined') {
+        Motion.animate($('#settings-panel'), { opacity: [0, 1], scale: [0.98, 1] }, { duration: 0.15, easing: 'ease-out' });
+      }
+      loadSettings();
+      if (tab.url.startsWith('lumen://settings:')) {
+        const panel = tab.url.split(':')[1];
+        showSettingsPanel(panel);
+      }
+    } else {
+      $('#settings-panel').classList.add('hidden');
+      $('#webview-stack').classList.remove('hidden');
+      document.body.classList.remove('settings-mode');
+    }
+
     $$('.webview-pane').forEach((p) => p.classList.remove('active'));
     $$('.tab').forEach((t) => t.classList.remove('active'));
     const pane = document.getElementById(`pane-${id}`);
@@ -475,6 +609,12 @@
     const wv = document.getElementById(`wv-${id}`);
     pane?.remove(); wv?.remove();
     tabs.splice(idx, 1);
+    if (id === settingsTabId) {
+      settingsTabId = null;
+      $('#settings-panel').classList.add('hidden');
+      $('#webview-stack').classList.remove('hidden');
+      document.body.classList.remove('settings-mode');
+    }
     if (tabs.length === 0) { createTab('lumen://newtab'); return; }
     if (activeTabId === id) switchTab(tabs[Math.max(0, idx - 1)].id);
     else renderTabs();
@@ -490,7 +630,8 @@
 
   function createTab(urlInput) {
     const id = newTabId();
-    const tab = { id, title: 'New Tab', url: '', urlDisplay: 'lumen://newtab', pinned: false, hibernated: false, group: null };
+    const isSettings = typeof urlInput === 'string' && urlInput.startsWith('lumen://settings');
+    const tab = { id, title: isSettings ? 'Settings' : 'New Tab', url: '', urlDisplay: isSettings ? urlInput : 'lumen://newtab', pinned: false, hibernated: false, group: null };
     tabs.push(tab);
     activeTabId = id;
     const pane = document.createElement('div');
@@ -539,7 +680,7 @@
     wv.addEventListener('page-title-updated', (e) => { if (e.title) tab.title = e.title.slice(0, 48); if (tab.id === activeTabId) renderTabs(); });
     wv.addEventListener('did-navigate', (e) => {
       tab.url = e.url;
-      tab.urlDisplay = e.url.startsWith('data:') ? 'lumen://search' : e.url;
+      tab.urlDisplay = e.url.startsWith('data:') ? 'lumen://search' : e.url.includes('newtab.html') ? 'lumen://newtab' : e.url;
       if (tab.id === activeTabId) { $('#omnibox').value = tab.urlDisplay; updateNavButtons(); updateBookmarkState(); }
       const blocked = document.getElementById(`pane-${tab.id}`)?.querySelector('.blocked-overlay');
       if (blocked) blocked.remove();
@@ -551,12 +692,33 @@
         window.lumen.addBrowserHistory({ url: e.url, title: tab.title });
       }
     });
-    wv.addEventListener('did-navigate-in-page', (e) => { tab.url = e.url; if (tab.id === activeTabId) $('#omnibox').value = e.url; });
+    wv.addEventListener('did-navigate-in-page', (e) => { tab.url = e.url; if (tab.id === activeTabId) $('#omnibox').value = e.url.includes('newtab.html') ? 'lumen://newtab' : e.url; });
     wv.addEventListener('new-window', (e) => { e.preventDefault(); createTab(e.url); });
     bindFind(wv);
   }
 
   async function navigateTab(tab, input) {
+    if (typeof input === 'string' && input.startsWith('lumen://settings')) {
+      const panel = input.includes(':') ? input.split(':')[1] : null;
+      tab.title = 'Settings';
+      tab.url = input;
+      tab.urlDisplay = input;
+      $('#omnibox').value = input;
+      settingsTabId = tab.id;
+      $('#settings-panel').classList.remove('hidden');
+      $('#webview-stack').classList.add('hidden');
+      document.body.classList.add('settings-mode');
+      loadSettings();
+      if (panel) showSettingsPanel(panel);
+      else {
+        $$('.snav').forEach((b) => b.classList.remove('on'));
+        $$('.spanel').forEach((p) => p.classList.remove('on'));
+        const firstNav = $$('.snav')[0];
+        if (firstNav) { firstNav.classList.add('on'); document.getElementById(`panel-${firstNav.dataset.panel}`)?.classList.add('on'); }
+      }
+      renderTabs();
+      return;
+    }
     const wv = document.getElementById(`wv-${tab.id}`);
     if (!wv) return;
     let target = await resolveNavigation(input);
@@ -599,7 +761,10 @@
     try {
       const saved = await window.lumen.loadTabs();
       if (saved && saved.length > 0) {
-        for (const t of saved) {
+        // Filter out settings tabs (they should not persist)
+        const filtered = saved.filter((t) => !t.url || !t.url.startsWith('lumen://settings'));
+        if (filtered.length === 0) return false;
+        for (const t of filtered) {
           const id = newTabId();
           const tab = { id, title: t.title || 'New Tab', url: t.url || '', urlDisplay: t.urlDisplay || 'lumen://newtab', pinned: !!t.pinned, hibernated: !!t.hibernated, group: t.group || null };
           if (tab.hibernated) tab.__hibernatedUrl = t.url;
@@ -622,7 +787,7 @@
           bindWebview(wv, tab);
         }
         renderTabs();
-        if (saved.length > 0) switchTab(tabs[0].id);
+        if (filtered.length > 0) switchTab(tabs[0].id);
         return true;
       }
     } catch {}
@@ -691,56 +856,41 @@
       if (!mod && e.key === 'F12') { e.preventDefault(); toggleDevTools(); return; }
       if (!mod && e.key === 'Escape' && findOpen) { toggleFindBar(); return; }
       if (!mod) return;
+      if (e.shiftKey) {
+        if (e.key === 'T') { e.preventDefault(); reopenClosedTab(); return; }
+        if (e.key === 'B') { e.preventDefault(); openBookmarkManager(); return; }
+        if (e.key === 'I') { e.preventDefault(); toggleDevTools(); return; }
+        if (e.key === 'J') { e.preventDefault(); toast('Console: open DevTools (F12 / Ctrl+Shift+I)'); return; }
+        if (e.key === 'S') { e.preventDefault(); toggleSplitView(); return; }
+        if (e.key === 'Tab') { e.preventDefault(); const idx = tabs.findIndex((t) => t.id === activeTabId); if (idx > 0) switchTab(tabs[idx - 1].id); return; }
+      }
+      if (e.key === 'Tab') { e.preventDefault(); const idx = tabs.findIndex((t) => t.id === activeTabId); if (idx < tabs.length - 1) switchTab(tabs[idx + 1].id); else if (tabs.length > 0) switchTab(tabs[0].id); return; }
       if (e.key === 't' || e.key === 'T') { e.preventDefault(); createTab(settings.homePage || 'lumen://newtab'); }
       else if (e.key === 'w' || e.key === 'W') { e.preventDefault(); if (activeTabId) closeTab(activeTabId); }
       else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); $('#omnibox').focus(); $('#omnibox').select(); }
       else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFindBar(); }
       else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); getActiveWebview()?.reload(); }
       else if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleBookmark(); }
-      else if (e.key === 'Tab' && e.shiftKey) { e.preventDefault(); const idx = tabs.findIndex((t) => t.id === activeTabId); if (idx > 0) switchTab(tabs[idx - 1].id); }
-      else if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); const idx = tabs.findIndex((t) => t.id === activeTabId); if (idx < tabs.length - 1) switchTab(tabs[idx + 1].id); else if (tabs.length > 0) switchTab(tabs[0].id); }
-      else if (e.key >= '1' && e.key <= '8') { e.preventDefault(); const idx = parseInt(e.key) - 1; if (tabs[idx]) switchTab(tabs[idx].id); }
-      else if (e.key === '9') { e.preventDefault(); if (tabs.length > 0) switchTab(tabs[tabs.length - 1].id); }
       else if (e.key === 'h' || e.key === 'H') { e.preventDefault(); openHistoryPanel(); }
-      else if (e.key === 'T' && e.shiftKey) { e.preventDefault(); reopenClosedTab(); }
-      else if (e.key === 'B' && e.shiftKey) { e.preventDefault(); openBookmarkManager(); }
       else if (e.key === '=' || e.key === '+') { e.preventDefault(); setZoom(1); }
       else if (e.key === '-') { e.preventDefault(); setZoom(-1); }
       else if (e.key === '0') { e.preventDefault(); resetZoom(); }
-      else if (e.key === 'I' && e.shiftKey) { e.preventDefault(); toggleDevTools(); }
-      else if (e.key === 'J' && e.shiftKey) { e.preventDefault(); toast('Console: open DevTools (F12 / Ctrl+Shift+I)'); }
-      else if (e.key === 'S' && e.shiftKey) { e.preventDefault(); toggleSplitView(); }
-      else if (e.key === ',') { e.preventDefault(); loadSettings(); toggleSettingsTab(); }
+      else if (e.key === ',') { e.preventDefault(); openSettingsTab(); }
+      else if (e.key >= '1' && e.key <= '8') { e.preventDefault(); const idx = parseInt(e.key) - 1; if (tabs[idx]) switchTab(tabs[idx].id); }
+      else if (e.key === '9') { e.preventDefault(); if (tabs.length > 0) switchTab(tabs[tabs.length - 1].id); }
     });
   }
 
   function openBookmarkManager() {
-    loadSettings();
-    toggleSettingsTab();
-    $$('.snav').forEach((b) => b.classList.remove('on'));
-    $$('.spanel').forEach((p) => p.classList.remove('on'));
-    const bmNav = [...$$('.snav')].find((b) => b.dataset.panel === 'bookmarks');
-    if (bmNav) { bmNav.classList.add('on'); document.getElementById('panel-bookmarks')?.classList.add('on'); }
+    openSettingsTab('bookmarks');
   }
 
   function openHistoryPanel() {
-    loadSettings();
-    toggleSettingsTab();
-    $$('.snav').forEach((b) => b.classList.remove('on'));
-    $$('.spanel').forEach((p) => p.classList.remove('on'));
-    const histNav = [...$$('.snav')].find((b) => b.dataset.panel === 'history');
-    if (histNav) { histNav.classList.add('on'); document.getElementById('panel-history')?.classList.add('on'); }
-    refreshHistoryList();
+    openSettingsTab('history');
   }
 
   function openDownloadsPanel() {
-    loadSettings();
-    toggleSettingsTab();
-    $$('.snav').forEach((b) => b.classList.remove('on'));
-    $$('.spanel').forEach((p) => p.classList.remove('on'));
-    const dlNav = [...$$('.snav')].find((b) => b.dataset.panel === 'downloads');
-    if (dlNav) { dlNav.classList.add('on'); document.getElementById('panel-downloads')?.classList.add('on'); }
-    refreshDownloadsList();
+    openSettingsTab('downloads');
   }
 
   function setupToolbar() {
@@ -1022,8 +1172,20 @@
   }
 
   function setupSettings() {
-    $('#btn-settings').addEventListener('click', () => { loadSettings(); toggleSettingsTab(); });
-    $('#settings-close').addEventListener('click', () => toggleSettingsTab());
+    $('#btn-settings').addEventListener('click', () => { openSettingsTab(); });
+    // Animate settings gear icon on hover with anime.js
+    const settingsBtn = $('#btn-settings');
+    settingsBtn.addEventListener('mouseenter', () => {
+      if (typeof anime !== 'undefined') {
+        anime({ targets: settingsBtn.querySelector('svg'), rotate: 90, duration: 400, easing: 'easeOutElastic(1, .5)' });
+      }
+    });
+    settingsBtn.addEventListener('mouseleave', () => {
+      if (typeof anime !== 'undefined') {
+        anime({ targets: settingsBtn.querySelector('svg'), rotate: 0, duration: 300, easing: 'easeOutCubic' });
+      }
+    });
+    $('#settings-close').addEventListener('click', () => closeSettingsTab());
     $$('.snav').forEach((btn) => {
       btn.addEventListener('click', () => {
         $$('.snav').forEach((b) => b.classList.remove('on'));
@@ -1066,6 +1228,16 @@
       if (result.success) toast('Bookmarks exported');
       else toast(result.error || 'Export failed');
     });
+    $('#btn-add-bookmark').addEventListener('click', async () => {
+      const name = $('#bm-add-name').value.trim();
+      const url = $('#bm-add-url').value.trim();
+      if (!name || !url) { toast('Enter both name and URL'); return; }
+      const existing = await window.lumen.getBookmarks();
+      if (existing.some((b) => b.url === url)) { toast('Bookmark already exists'); return; }
+      await window.lumen.addBookmark({ name, url });
+      $('#bm-add-name').value = ''; $('#bm-add-url').value = '';
+      await refreshBookmarkList(); toast('Bookmark added');
+    });
     $('#set-proxy-region').addEventListener('change', updateProxyFields);
     $('#btn-apply-proxy').addEventListener('click', applyProxySettings);
     $('#btn-clear-browsing-data').addEventListener('click', handleClearBrowsingData);
@@ -1093,14 +1265,28 @@
         limitGpu: $('#set-limit-gpu').checked, limitNetwork: $('#set-limit-network').checked, limitCpu: $('#set-limit-cpu').checked,
         adultMode: $('#set-adult-mode').checked,
         adBlockEnabled: $('#set-adblock').checked,
+        searchSuggestions: $('#set-search-suggest').checked,
+        defaultLanguage: $('#set-language').value, toolbarStyle: $('#set-toolbar-style').value,
+        bookmarkBar: $('#set-bm-bar').checked, compactMode: $('#set-compact').checked,
+        tabsNext: $('#set-tabs-next').checked, tabsWarn: $('#set-tabs-warn').checked,
+        tabPosition: $('#set-tab-position').value,
+        startupBehavior: $('#set-startup').value, downloadPath: $('#set-download-path').value,
+        hardwareAccel: $('#set-hardware-accel').checked, smoothScroll: $('#set-smooth-scroll').checked,
+        overlayScrollbars: $('#set-overlay-scroll').checked, uiFontSize: $('#set-font-size').value,
+        doNotTrack: $('#set-dnt').checked, cookieBehavior: $('#set-cookies').value,
+        javaScriptEnabled: $('#set-javascript').checked,
+        screenReader: $('#set-a11y-screen').checked,
+        forceZoom: $('#set-a11y-force-zoom').checked, defaultZoom: parseInt($('#set-a11y-zoom').value, 10),
+        reducedMotion: $('#set-a11y-motion').checked, highContrast: $('#set-a11y-contrast').checked,
+        focusRing: $('#set-a11y-focus').checked, minFontSize: parseInt($('#set-a11y-min-font').value, 10),
       };
       settings = await window.lumen.setSettings(partial);
       adultModeActive = !!settings.adultMode;
       if (partial.lumenSearchEnabled !== undefined) await window.lumen.toggleLumenSearch(partial.lumenSearchEnabled);
-      applyTheme(settings); toggleSettingsTab(); toast('Settings saved');
+      applyTheme(settings); closeSettingsTab(); toast('Settings saved');
       refreshLumenStats(); refreshPasswordList();
     });
-    $('#btn-open-docs').addEventListener('click', async () => { const p = await window.lumen.resolvePath('lumen_browser.html'); const tab = getActiveTab(); if (tab) navigateTab(tab, `file://${p}`); toggleSettingsTab(); });
+    $('#btn-open-docs').addEventListener('click', async () => { const p = await window.lumen.resolvePath('lumen_browser.html'); const tab = getActiveTab(); if (tab) navigateTab(tab, `file://${p}`); closeSettingsTab(); });
 
     // Import browser
     $('#btn-start-import').addEventListener('click', startImport);
@@ -1218,6 +1404,31 @@
     $('#set-limit-network').checked = !!settings.limitNetwork; $('#set-limit-cpu').checked = !!settings.limitCpu;
     $('#set-adult-mode').checked = !!settings.adultMode;
     $('#set-adblock').checked = settings.adBlockEnabled !== false;
+    // New settings
+    $('#set-search-suggest').checked = settings.searchSuggestions !== false;
+    $('#set-language').value = settings.defaultLanguage || 'en-US';
+    $('#set-toolbar-style').value = settings.toolbarStyle || 'default';
+    $('#set-bm-bar').checked = !!settings.bookmarkBar;
+    $('#set-compact').checked = !!settings.compactMode;
+    $('#set-tabs-next').checked = !!settings.tabsNext;
+    $('#set-tabs-warn').checked = settings.tabsWarn !== false;
+    $('#set-tab-position').value = settings.tabPosition || 'end';
+    $('#set-startup').value = settings.startupBehavior || 'continue';
+    $('#set-download-path').value = settings.downloadPath || '';
+    $('#set-hardware-accel').checked = settings.hardwareAccel !== false;
+    $('#set-smooth-scroll').checked = settings.smoothScroll !== false;
+    $('#set-overlay-scroll').checked = !!settings.overlayScrollbars;
+    $('#set-font-size').value = settings.uiFontSize || 'medium';
+    $('#set-dnt').checked = !!settings.doNotTrack;
+    $('#set-cookies').value = settings.cookieBehavior || 'all';
+    $('#set-javascript').checked = settings.javaScriptEnabled !== false;
+    $('#set-a11y-screen').checked = !!settings.screenReader;
+    $('#set-a11y-force-zoom').checked = !!settings.forceZoom;
+    $('#set-a11y-zoom').value = settings.defaultZoom || 100;
+    $('#set-a11y-motion').checked = !!settings.reducedMotion;
+    $('#set-a11y-contrast').checked = !!settings.highContrast;
+    $('#set-a11y-focus').checked = settings.focusRing !== false;
+    $('#set-a11y-min-font').value = settings.minFontSize || 0;
     updateAiProviderUI(settings.aiProvider || 'anthropic');
     refreshLocalAiStatus(); refreshLumenStats(); refreshPasswordList(); refreshBookmarkList(); refreshExtensionList();
   }

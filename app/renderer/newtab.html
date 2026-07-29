@@ -14,14 +14,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 48px 24px;
       background-color: #07070e;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       position: relative;
-      overflow: hidden;
+      overflow-y: auto;
     }
     body::before {
       content: '';
@@ -31,25 +30,20 @@
         linear-gradient(180deg, transparent 40%, #07070ecc 100%);
       pointer-events: none;
     }
-    .wrap { position: relative; z-index: 1; width: 100%; max-width: 560px; text-align: center; }
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 640px; text-align: center; }
     .logo {
-      width: 72px;
-      height: 72px;
-      margin: 0 auto 20px;
-      border-radius: 18px;
+      width: 64px; height: 64px;
+      margin: 0 auto 16px;
+      border-radius: 16px;
       box-shadow: 0 12px 48px #7c3aed44;
     }
     h1 {
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
+      font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px;
       background: linear-gradient(135deg, var(--accent, #7c3aed), var(--accent2, #06b6d4));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .sub { color: #8888a8; font-size: 14px; margin-bottom: 32px; }
-  .search-box {
+    .sub { color: #8888a8; font-size: 13px; margin-bottom: 24px; }
+    .search-box {
       display: flex;
       background: #10101cdd;
       border: 1.5px solid #1e1e30;
@@ -82,16 +76,19 @@
       cursor: pointer;
       font-family: inherit;
     }
-    .shortcuts {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-top: 40px;
-      width: 100%;
-      max-width: 480px;
+    .bookmarks-section { margin-top: 32px; width: 100%; }
+    .bookmarks-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: #8888a8; margin-bottom: 12px;
     }
-    .shortcut {
-      padding: 16px 8px;
+    .bookmarks-header span { text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    #bookmarks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .bm-card {
+      padding: 14px 8px 10px;
       background: #10101c99;
       border: 1px solid #1e1e30;
       border-radius: 12px;
@@ -100,19 +97,32 @@
       text-decoration: none;
       color: #cacade;
       font-size: 12px;
+      text-align: center;
+      overflow: hidden;
     }
-    .shortcut:hover {
+    .bm-card:hover {
       transform: translateY(-2px);
       border-color: var(--accent, #7c3aed);
     }
-    .shortcut .ic { font-size: 22px; display: block; margin-bottom: 6px; }
+    .bm-card .bm-fav {
+      width: 28px; height: 28px; border-radius: 6px; margin: 0 auto 6px; display: block;
+    }
+    .bm-card .bm-title {
+      display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .bm-card .bm-url {
+      display: block; font-size: 10px; color: #666688; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;
+    }
+    .empty-bookmarks {
+      color: #666688; font-size: 13px; padding: 24px 0;
+    }
     .clock {
-      position: absolute;
-      top: 24px;
-      right: 28px;
-      font-size: 13px;
-      color: #8888a8;
-      z-index: 2;
+      position: absolute; top: 24px; right: 28px;
+      font-size: 13px; color: #8888a8; z-index: 2;
+    }
+    @media (max-width: 480px) {
+      #bookmarks-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -126,11 +136,12 @@
       <input type="text" id="q" placeholder="Search or type a URL…" autofocus autocomplete="off">
       <button type="submit">Search</button>
     </form>
-    <div class="shortcuts">
-      <a class="shortcut" data-url="https://github.com"><span class="ic">⌘</span>GitHub</a>
-      <a class="shortcut" data-url="https://developer.mozilla.org"><span class="ic">📘</span>MDN</a>
-      <a class="shortcut" data-url="https://wikipedia.org"><span class="ic">📖</span>Wikipedia</a>
-      <a class="shortcut" data-url="lumen://docs"><span class="ic">✦</span>Docs</a>
+    <div class="bookmarks-section">
+      <div class="bookmarks-header">
+        <span>Bookmarks</span>
+        <a href="lumen://settings:bookmarks" id="manage-bm-link" style="color:var(--accent,#7c3aed);text-decoration:none;cursor:pointer">Manage</a>
+      </div>
+      <div id="bookmarks-grid"></div>
     </div>
   </div>
   <script>
@@ -154,25 +165,57 @@
     }
     tick();
     setInterval(tick, 30000);
+
+    function navigate(url) {
+      if (window.lumenGuest) window.lumenGuest.navigate(url);
+      else if (window.parent !== window) window.parent.postMessage({ type: 'lumen-navigate', query: url }, '*');
+    }
+
     document.getElementById('search-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const q = document.getElementById('q').value.trim();
-      if (!q) return;
-      if (window.lumenGuest) window.lumenGuest.navigate(q);
-      else if (window.parent !== window) {
-        window.parent.postMessage({ type: 'lumen-navigate', query: q }, '*');
-      }
+      if (q) navigate(q);
     });
-    document.querySelectorAll('.shortcut').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.preventDefault();
-        const url = el.dataset.url;
-        if (window.lumenGuest) window.lumenGuest.navigate(url);
-        else if (window.parent !== window) {
-          window.parent.postMessage({ type: 'lumen-navigate', query: url }, '*');
+
+    document.getElementById('manage-bm-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      navigate('lumen://settings:bookmarks');
+    });
+
+    async function loadBookmarks() {
+      const grid = document.getElementById('bookmarks-grid');
+      try {
+        let bookmarks = [];
+        if (window.lumenGuest && window.lumenGuest.getBookmarks) {
+          bookmarks = await window.lumenGuest.getBookmarks();
         }
-      });
-    });
+        if (bookmarks.length === 0) {
+          grid.innerHTML = '<div class="empty-bookmarks">No bookmarks yet. Press Ctrl+D to bookmark this page, or open Settings → Bookmarks to add one.</div>';
+          return;
+        }
+        grid.innerHTML = bookmarks.map((bm) => {
+          let host = '';
+          try { host = new URL(bm.url).hostname; } catch {}
+          return `<a class="bm-card" href="${bm.url}">
+            <img class="bm-fav" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32" alt="" onerror="this.style.display='none'">
+            <span class="bm-title">${escapeHtml(bm.title || bm.url)}</span>
+            <span class="bm-url">${escapeHtml(host)}</span>
+          </a>`;
+        }).join('');
+        grid.querySelectorAll('.bm-card').forEach((el) => {
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigate(el.getAttribute('href'));
+          });
+        });
+      } catch { grid.innerHTML = '<div class="empty-bookmarks">Could not load bookmarks.</div>'; }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    }
+
+    loadBookmarks();
   </script>
 </body>
 </html>
