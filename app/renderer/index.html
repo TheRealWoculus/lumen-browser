@@ -10,7 +10,9 @@
 </head>
 <body>
   <header id="titlebar" class="titlebar">
-    <div class="titlebar-drag"></div>
+    <div class="titlebar-drag">
+      <button class="tb-icon" id="btn-left-sidebar" title="Pinned Sites"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+    </div>
     <div class="wc-group" id="wc-group">
       <button class="wc wc-close" id="btn-close" title="Close"></button>
       <button class="wc wc-min" id="btn-min" title="Minimize"></button>
@@ -23,7 +25,6 @@
     <div class="titlebar-drag titlebar-center"></div>
     <div class="titlebar-actions">
       <button class="tb-icon" id="btn-sidebar" title="AI Assistant"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 4-4 4s-4-2-4-4 2-4 4-4z"/><path d="M12 14c-4 0-6 2-6 4v2h12v-2c0-2-2-4-6-4z"/><path d="M20 12l2 2-2 2"/><path d="M4 12l-2 2 2 2"/><path d="M12 18v2"/></svg></button>
-      <button class="tb-icon" id="btn-settings" title="Settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </header>
 
@@ -39,13 +40,176 @@
       <input type="text" id="omnibox" class="omnibox" placeholder="Search or enter URL…" spellcheck="false" autocomplete="off">
       <div id="omnibox-dropdown" class="omnibox-dropdown hidden"></div>
     </div>
-    <button class="nav-btn accent" id="btn-bookmark" title="Bookmark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+    <button class="nav-btn accent" id="btn-bookmark" title="Bookmark (Ctrl+D)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>
+    <button class="nav-btn" id="btn-split" title="Split view"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg></button>
+    <button class="nav-btn" id="btn-downloads" title="Downloads"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+    <button class="nav-btn" id="btn-settings" title="Settings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <span id="zoom-indicator" class="zoom-indicator hidden">100%</span>
   </nav>
+  <div id="find-bar" class="find-bar hidden">
+    <input type="text" id="find-input" placeholder="Find in page…" spellcheck="false">
+    <span id="find-results" class="find-results"></span>
+    <button class="find-btn" id="find-prev" title="Previous"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button class="find-btn" id="find-next" title="Next"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <button class="find-btn" id="find-close" title="Close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
 
   <main class="main-layout">
+    <aside id="left-sidebar" class="left-sidebar hidden">
+      <div class="left-sidebar-header">
+        <span>Pinned Sites</span>
+        <button class="ai-close" id="ls-close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div id="pinned-sites-list" class="pinned-sites-list"></div>
+      <div id="sidebar-webview-wrap" class="sidebar-webview-wrap hidden">
+        <div class="sidebar-wv-header">
+          <button class="find-btn" id="sidebar-wv-back"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+          <span id="sidebar-wv-title" class="sidebar-wv-title">Site</span>
+          <button class="find-btn" id="sidebar-wv-close"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <webview id="sidebar-webview" class="sidebar-webview" partition="persist:lumen" allowpopups="true"></webview>
+      </div>
+    </aside>
+
     <section class="content" id="content">
       <div id="webview-stack"></div>
+      <div id="settings-panel" class="settings-panel-inline hidden">
+        <nav class="settings-nav-inline">
+          <button type="button" class="snav on" data-panel="appearance">Appearance</button>
+          <button type="button" class="snav" data-panel="search">Search</button>
+          <button type="button" class="snav" data-panel="ai">AI</button>
+          <button type="button" class="snav" data-panel="general">General</button>
+          <button type="button" class="snav" data-panel="performance">Performance</button>
+          <button type="button" class="snav" data-panel="passwords">Passwords</button>
+          <button type="button" class="snav" data-panel="history">History</button>
+          <button type="button" class="snav" data-panel="downloads">Downloads</button>
+          <button type="button" class="snav" data-panel="privacy">Privacy</button>
+          <button type="button" class="snav" data-panel="vpn">VPN</button>
+          <button type="button" class="snav" data-panel="bookmarks">Bookmarks</button>
+          <button type="button" class="snav" data-panel="extensions">Extensions</button>
+          <button type="button" class="snav settings-close-btn" id="settings-close">Close</button>
+        </nav>
+        <div class="settings-body-inline">
+          <section class="spanel on" id="panel-appearance">
+            <div class="settings-inner">
+              <h3>Appearance</h3>
+              <label class="field"><span>Accent color</span><input type="color" id="set-accent" value="#7C3AED"></label>
+              <label class="field"><span>Secondary accent</span><input type="color" id="set-accent2" value="#06B6D4"></label>
+              <label class="field"><span>New tab wallpaper</span><div class="row"><input type="text" id="set-wallpaper" placeholder="URL or pick a file…" readonly><button type="button" id="btn-pick-wallpaper">Browse</button></div></label>
+              <label class="field"><span>Wallpaper fit</span><select id="set-wallpaper-mode"><option value="cover">Cover</option><option value="contain">Contain</option><option value="center">Center</option></select></label>
+            </div>
+          </section>
+          <section class="spanel" id="panel-search">
+            <div class="settings-inner">
+              <h3>Search engines</h3>
+              <label class="field"><span>Default search</span><select id="set-default-search"><option value="duckduckgo">DuckDuckGo</option><option value="google">Google</option><option value="bing">Bing</option><option value="lumen">Lumen Search</option></select></label>
+              <div class="toggle-card"><div><strong>Lumen Search</strong><p>Private crawler that indexes the web locally.</p><p class="muted" id="lumen-stats">Index: 0 pages · 0 queued</p></div><label class="switch"><input type="checkbox" id="set-lumen-search"><span class="slider"></span></label></div>
+            </div>
+          </section>
+          <section class="spanel" id="panel-ai">
+            <div class="settings-inner">
+              <h3>AI Assistant</h3>
+              <label class="field"><span>Provider</span><select id="set-ai-provider"><option value="anthropic">Cloud Claude</option><option value="local">Local .gguf/.bin</option></select></label>
+              <div id="ai-cloud-fields"><p class="hint">API key stays on your machine only.</p><label class="field"><span>API key</span><input type="password" id="set-ai-key" placeholder="sk-ant-…"></label></div>
+              <div id="ai-local-fields" class="hidden">
+                <label class="field"><span>Model file</span><div class="row"><input type="text" id="set-local-model" placeholder="/path/to/model.gguf" readonly><button type="button" id="btn-pick-model">Browse</button></div></label>
+                <label class="field"><span>Context size</span><input type="number" id="set-local-ctx" min="512" max="131072" step="512" value="4096"></label>
+                <p class="muted" id="local-model-status">Model: not loaded</p>
+                <div class="row"><button type="button" class="btn-secondary" id="btn-load-model">Load</button><button type="button" class="btn-secondary" id="btn-unload-model">Unload</button></div>
+              </div>
+            </div>
+          </section>
+          <section class="spanel" id="panel-general">
+            <div class="settings-inner">
+              <h3>General</h3>
+              <label class="field"><span>Home page</span><input type="text" id="set-home" value="lumen://newtab"></label>
+              <label class="field"><span>Theme</span><select id="set-theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option></select></label>
+              <button type="button" class="btn-secondary" id="btn-open-docs">Open docs</button>
+              <button type="button" class="btn-secondary" id="btn-clear-history" style="margin-top:8px">Clear search history</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-performance">
+            <div class="settings-inner">
+              <h3>Performance</h3>
+              <label class="field"><span>Max RAM (MB, 0=unlimited)</span><input type="number" id="set-max-ram" min="0" max="65536" step="256" value="0"></label>
+              <div class="toggle-card"><div><strong>Limit GPU accel</strong></div><label class="switch"><input type="checkbox" id="set-limit-gpu"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Limit network</strong></div><label class="switch"><input type="checkbox" id="set-limit-network"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Limit CPU</strong></div><label class="switch"><input type="checkbox" id="set-limit-cpu"><span class="slider"></span></label></div>
+              <hr><button type="button" class="btn-secondary" id="btn-hibernate-all">Hibernate all bg tabs</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-passwords">
+            <div class="settings-inner">
+              <h3>Passwords</h3>
+              <p class="muted">Saved locally on your device.</p>
+              <div id="password-list"></div><p class="muted" id="password-empty">No saved passwords.</p>
+            </div>
+          </section>
+          <section class="spanel" id="panel-history">
+            <div class="settings-inner">
+              <h3>History</h3>
+              <p class="muted">Click entry to navigate.</p>
+              <div id="history-list" style="max-height:300px;overflow-y:auto"></div>
+              <button type="button" class="btn-secondary" id="btn-clear-browser-history">Clear history</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-downloads">
+            <div class="settings-inner">
+              <h3>Downloads</h3>
+              <div id="downloads-list" style="max-height:300px;overflow-y:auto"></div>
+              <button type="button" class="btn-secondary" id="btn-clear-downloads">Clear list</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-privacy">
+            <div class="settings-inner">
+              <h3>Privacy & Safety</h3>
+              <div class="toggle-card"><div><strong>18+ Mode</strong><p>Block adult content.</p></div><label class="switch"><input type="checkbox" id="set-adult-mode"><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Ad Blocker</strong><p>Block ad domains.</p></div><label class="switch"><input type="checkbox" id="set-adblock" checked><span class="slider"></span></label></div>
+              <hr><h3>Clear Browsing Data</h3>
+              <div class="toggle-card"><div><strong>Cache</strong></div><label class="switch"><input type="checkbox" id="clear-cache" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Cookies</strong></div><label class="switch"><input type="checkbox" id="clear-cookies" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>History</strong></div><label class="switch"><input type="checkbox" id="clear-history-chk" checked><span class="slider"></span></label></div>
+              <div class="toggle-card"><div><strong>Downloads list</strong></div><label class="switch"><input type="checkbox" id="clear-downloads-chk" checked><span class="slider"></span></label></div>
+              <button type="button" class="btn-secondary" id="btn-clear-browsing-data" style="background:#EF444422;border-color:#EF4444;color:#EF4444">Clear selected</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-vpn">
+            <div class="settings-inner">
+              <h3>VPN & Proxy</h3>
+              <div class="toggle-card"><div><strong>Enable proxy</strong></div><label class="switch"><input type="checkbox" id="set-proxy-enabled"><span class="slider"></span></label></div>
+              <label class="field"><span>Region</span><select id="set-proxy-region"><option value="none">Direct</option><option value="auto">Auto</option><option value="america">America</option><option value="europe">Europe</option><option value="korea">Korea</option><option value="china">China</option><option value="russia">Russia</option><option value="south_america">South America</option><option value="manual">Custom</option></select></label>
+              <div id="proxy-manual-fields" class="hidden">
+                <label class="field"><span>Host</span><input type="text" id="set-proxy-host" placeholder="127.0.0.1"></label>
+                <label class="field"><span>Port</span><input type="text" id="set-proxy-port" placeholder="1080"></label>
+                <label class="field"><span>Username</span><input type="text" id="set-proxy-user"></label>
+                <label class="field"><span>Password</span><input type="password" id="set-proxy-pass"></label>
+              </div>
+              <button type="button" class="btn-secondary" id="btn-apply-proxy">Apply</button>
+            </div>
+          </section>
+          <section class="spanel" id="panel-bookmarks">
+            <div class="settings-inner">
+              <h3>Bookmarks</h3>
+              <p class="muted">Ctrl+D to bookmark.</p>
+              <div class="row"><button type="button" class="btn-secondary" id="btn-import-bookmarks" style="margin-top:0">Import (HTML)</button><button type="button" class="btn-secondary" id="btn-export-bookmarks" style="margin-top:0">Export (HTML)</button></div>
+              <div id="bookmark-list"></div><p class="muted" id="bookmark-empty">No bookmarks.</p>
+            </div>
+          </section>
+          <section class="spanel" id="panel-extensions">
+            <div class="settings-inner">
+              <h3>Extensions</h3>
+              <p class="muted">Load unpacked Chrome extensions.</p>
+              <button type="button" class="btn-secondary" id="btn-load-extension">Load unpacked...</button>
+              <div id="extension-list"></div><p class="muted" id="extension-empty">None loaded.</p>
+            </div>
+          </section>
+        </div>
+        <footer class="settings-foot-inline">
+          <button type="button" id="settings-save" class="btn-primary">Save Settings</button>
+        </footer>
+      </div>
     </section>
+
     <aside id="ai-sidebar" class="ai-sidebar hidden">
       <header class="ai-header">
         <span><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:middle;margin-right:6px"><path d="M12 2a4 4 0 0 1 4 4c0 2-2 4-4 4s-4-2-4-4 2-4 4-4z"/><path d="M12 14c-4 0-6 2-6 4v2h12v-2c0-2-2-4-6-4z"/><path d="M20 12l2 2-2 2"/><path d="M4 12l-2 2 2 2"/><path d="M12 18v2"/></svg> Lumen AI</span>
@@ -58,214 +222,6 @@
       </footer>
     </aside>
   </main>
-
-  <dialog id="settings-dialog" class="settings-dialog">
-    <form method="dialog" class="settings-panel">
-      <header class="settings-head">
-        <h2>Settings</h2>
-        <button type="button" class="settings-close" id="settings-close"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </header>
-      <nav class="settings-nav">
-        <button type="button" class="snav on" data-panel="appearance">Appearance</button>
-        <button type="button" class="snav" data-panel="search">Search</button>
-        <button type="button" class="snav" data-panel="ai">AI Assistant</button>
-        <button type="button" class="snav" data-panel="general">General</button>
-        <button type="button" class="snav" data-panel="performance">Performance</button>
-        <button type="button" class="snav" data-panel="passwords">Passwords</button>
-        <button type="button" class="snav" data-panel="privacy">Privacy</button>
-        <button type="button" class="snav" data-panel="bookmarks">Bookmarks</button>
-        <button type="button" class="snav" data-panel="extensions">Extensions</button>
-      </nav>
-      <div class="settings-body">
-        <section class="spanel on" id="panel-appearance">
-          <h3>Appearance</h3>
-          <label class="field">
-            <span>Accent color</span>
-            <input type="color" id="set-accent" value="#7C3AED">
-          </label>
-          <label class="field">
-            <span>Secondary accent</span>
-            <input type="color" id="set-accent2" value="#06B6D4">
-          </label>
-          <label class="field">
-            <span>New tab wallpaper</span>
-            <div class="row">
-              <input type="text" id="set-wallpaper" placeholder="URL or pick a file…" readonly>
-              <button type="button" id="btn-pick-wallpaper">Browse</button>
-            </div>
-          </label>
-          <label class="field">
-            <span>Wallpaper fit</span>
-            <select id="set-wallpaper-mode">
-              <option value="cover">Cover</option>
-              <option value="contain">Contain</option>
-              <option value="center">Center</option>
-            </select>
-          </label>
-        </section>
-        <section class="spanel" id="panel-search">
-          <h3>Search engines</h3>
-          <label class="field">
-            <span>Default search</span>
-            <select id="set-default-search">
-              <option value="duckduckgo">DuckDuckGo</option>
-              <option value="google">Google</option>
-              <option value="bing">Bing</option>
-              <option value="lumen">Lumen Search (local index)</option>
-            </select>
-          </label>
-          <div class="toggle-card">
-            <div>
-              <strong>Lumen Search</strong>
-              <p>Private crawler that indexes the web locally (off by default). Results stay on your device.</p>
-              <p class="muted" id="lumen-stats">Index: 0 pages · 0 queued</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="set-lumen-search">
-              <span class="slider"></span>
-            </label>
-          </div>
-        </section>
-        <section class="spanel" id="panel-ai">
-          <h3>AI Assistant</h3>
-          <label class="field">
-            <span>Provider</span>
-            <select id="set-ai-provider">
-              <option value="anthropic">Cloud — Claude (Anthropic API)</option>
-              <option value="local">Local — .gguf / .bin on disk</option>
-            </select>
-          </label>
-          <div id="ai-cloud-fields">
-            <p class="hint">API key stays on your machine only (same API family as William).</p>
-            <label class="field">
-              <span>API key</span>
-              <input type="password" id="set-ai-key" placeholder="sk-ant-…" autocomplete="off">
-            </label>
-          </div>
-          <div id="ai-local-fields" class="hidden">
-            <p class="hint">Run models locally via llama.cpp. Prefer <strong>.gguf</strong>; legacy <strong>.bin</strong> uses llama-cli if installed.</p>
-            <label class="field">
-              <span>Model file (.gguf / .bin)</span>
-              <div class="row">
-                <input type="text" id="set-local-model" placeholder="/path/to/model.gguf" readonly>
-                <button type="button" id="btn-pick-model">Browse</button>
-              </div>
-            </label>
-            <label class="field">
-              <span>Context size (tokens)</span>
-              <input type="number" id="set-local-ctx" min="512" max="131072" step="512" value="4096">
-            </label>
-            <p class="muted" id="local-model-status">Model: not loaded</p>
-            <div class="row" style="margin-top:8px">
-              <button type="button" class="btn-secondary" id="btn-load-model">Load model</button>
-              <button type="button" class="btn-secondary" id="btn-unload-model">Unload</button>
-            </div>
-          </div>
-        </section>
-        <section class="spanel" id="panel-general">
-          <h3>General</h3>
-          <label class="field">
-            <span>Home page</span>
-            <input type="text" id="set-home" value="lumen://newtab">
-          </label>
-          <label class="field">
-            <span>Theme</span>
-            <select id="set-theme">
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">System</option>
-            </select>
-          </label>
-          <button type="button" class="btn-secondary" id="btn-open-docs">Open documentation page</button>
-          <button type="button" class="btn-secondary" id="btn-clear-history" style="margin-top:8px">Clear search history</button>
-        </section>
-
-        <section class="spanel" id="panel-performance">
-          <h3>Performance Limiters</h3>
-          <label class="field">
-            <span>Max RAM (MB, 0 = unlimited)</span>
-            <input type="number" id="set-max-ram" min="0" max="65536" step="256" value="0" placeholder="0 = unlimited">
-          </label>
-          <div class="toggle-card">
-            <div>
-              <strong>Limit GPU acceleration</strong>
-              <p>Disable hardware GPU acceleration to save power on integrated GPUs.</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="set-limit-gpu">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="toggle-card">
-            <div>
-              <strong>Limit network bandwidth</strong>
-              <p>Throttle network requests to reduce background data usage.</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="set-limit-network">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="toggle-card">
-            <div>
-              <strong>Limit CPU usage</strong>
-              <p>Reduce background tab CPU priority to save battery.</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="set-limit-cpu">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <p class="muted" style="margin-top:10px">Restart the browser after changing these settings for full effect.</p>
-          <hr style="border:none;border-top:1px solid var(--bd);margin:16px 0">
-          <div class="field">
-            <span>Hibernate all background tabs</span>
-            <button type="button" class="btn-secondary" id="btn-hibernate-all">Hibernate now</button>
-          </div>
-        </section>
-
-        <section class="spanel" id="panel-passwords">
-          <h3>Password Manager</h3>
-          <p class="muted">Saved passwords are stored locally on your device. They are never sent anywhere.</p>
-          <div id="password-list" style="margin-top:12px"></div>
-          <p class="muted" id="password-empty">No saved passwords yet.</p>
-        </section>
-
-        <section class="spanel" id="panel-privacy">
-          <h3>Privacy & Safety</h3>
-          <div class="toggle-card">
-            <div>
-              <strong>18+ Mode</strong>
-              <p>Blocks known adult websites and NSFW content. Uses a built-in blocklist of domains and keywords.</p>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="set-adult-mode">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <p class="muted" style="margin-top:8px">Blocked sites will show a warning page instead of loading.</p>
-        </section>
-
-        <section class="spanel" id="panel-bookmarks">
-          <h3>Bookmarks</h3>
-          <p class="muted">Your saved bookmarks. Hit Ctrl+D to bookmark the current page.</p>
-          <div id="bookmark-list" style="margin-top:12px"></div>
-          <p class="muted" id="bookmark-empty">No bookmarks yet.</p>
-        </section>
-
-        <section class="spanel" id="panel-extensions">
-          <h3>Extensions (Experimental)</h3>
-          <p class="muted">Load unpacked Chrome extensions (Manifest V2/V3). Not all extensions may work correctly in Electron.</p>
-          <button type="button" class="btn-secondary" id="btn-load-extension" style="margin-top:8px">Load unpacked extension...</button>
-          <div id="extension-list" style="margin-top:12px"></div>
-          <p class="muted" id="extension-empty">No extensions loaded.</p>
-        </section>
-      </div>
-      <footer class="settings-foot">
-        <button type="button" id="settings-save" class="btn-primary">Save</button>
-      </footer>
-    </form>
-  </dialog>
 
   <div id="toast" class="toast hidden"></div>
   <script src="icons.js"></script>
